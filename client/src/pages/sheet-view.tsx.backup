@@ -1,0 +1,115 @@
+import { useParams } from "wouter";
+import { Card } from "@/components/ui/card";
+  return (
+    <div className="p-6 space-y-6">
+      {/* Data Table */}
+      {sheetData.headers.length === 0 ? (heetTable } from "@/components/sheet-table";
+import { useSheets, useSheetData } from "@/hooks/useSheets";
+
+export default function SheetView() {
+  const { id } = useParams();
+  
+  // Get sheets to find the sheet name by id
+  const { data: sheets } = useSheets();
+  const sheet = sheets?.find(s => s.id === id);
+  
+  // Get sheet data using sheet name
+  const { data: sheetData, isLoading, error, refetch } = useSheetData(sheet?.name || '');
+
+  // Transform data to match expected format
+  const transformedData = sheetData ? {
+    sheet: sheet,
+    records: sheetData.records,
+    headers: sheetData.headers
+  } : null;
+
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <div className="animate-pulse space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="h-6 bg-muted rounded w-48 mb-2"></div>
+              <div className="h-4 bg-muted rounded w-24"></div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="h-10 bg-muted rounded w-48"></div>
+              <div className="h-10 bg-muted rounded w-32"></div>
+            </div>
+          </div>
+          <Card>
+            <div className="p-6">
+              <div className="h-96 bg-muted rounded"></div>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <Card>
+          <div className="p-6 text-center">
+            <div className="text-destructive mb-4">
+              <i className="fas fa-exclamation-triangle text-4xl"></i>
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">Sheet Verisi Yüklenemedi</h3>
+            <p className="text-muted-foreground mb-4">Sheet verilerini yüklerken bir hata oluştu.</p>
+            <Button onClick={() => refetch()} data-testid="button-retry-sheet">
+              Tekrar Dene
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!transformedData) {
+    return (
+      <div className="p-6">
+        <Card>
+          <div className="p-6 text-center">
+            <div className="text-muted-foreground mb-4">
+              <i className="fas fa-table text-4xl"></i>
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">Sheet Bulunamadı</h3>
+            <p className="text-muted-foreground">Bu sheet mevcut değil veya silinmiş olabilir.</p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  const filteredRecords = transformedData.records.filter((record: any) =>
+    Object.values(record).some((cell: any) => 
+      cell?.toString().toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  );
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Data Table */}
+      {sheetData.headers.length === 0 ? (
+        <Card>
+          <div className="p-6 text-center">
+            <div className="text-muted-foreground mb-4">
+              <i className="fas fa-table text-4xl"></i>
+            </div>
+            <h4 className="text-lg font-medium text-foreground mb-2">Sheet Boş</h4>
+            <p className="text-muted-foreground mb-4">Bu sheet henüz başlık veya veri içermiyor.</p>
+          </div>
+        </Card>
+      ) : (
+        <SheetTable
+          headers={sheetData.headers}
+          records={transformedData.records}
+          sheetName={sheet.name}
+          sheetTabId={sheet.sheetTabId}
+          onDataChange={() => refetch()}
+        />
+      )}
+    </div>
+  );
+}

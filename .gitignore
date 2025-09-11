@@ -1,0 +1,21 @@
+node_modules
+dist
+.DS_Store
+server/public
+vite.config.ts.*
+*.tar.gz
+.env
+
+# Google Credentials - Security Sensitive
+*.json
+!package.json
+!components.json
+!tsconfig.json
+
+# Distribution files
+dist_*.zip
+dist.zip
+
+# Log files
+*.log
+zip-*.txt

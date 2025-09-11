@@ -1,0 +1,207 @@
+// Neo4j Graph Database Service
+import neo4j, { Driver, Session } from 'neo4j-driver';
+
+interface Neo4jConfig {
+  uri: string;
+  username: string;
+  password: string;
+  database?: string;
+}
+
+class Neo4jService {
+  private driver: Driver | null = null;
+  private config: Neo4jConfig | null = null;
+
+  // Konfigürasyon ayarlama
+  configure(config: Neo4jConfig) {
+    this.config = config;
+    if (this.driver) {
+      this.driver.close();
+    }
+  }
+
+  // Bağlantı kurma
+  private async getDriver(): Promise<Driver> {
+    if (!this.config) {
+      throw new Error('Neo4j konfigürasyonu yapılmamış. configure() metodunu çağırın.');
+    }
+
+    if (!this.driver) {
+      this.driver = neo4j.driver(
+        this.config.uri,
+        neo4j.auth.basic(this.config.username, this.config.password)
+      );
+    }
+
+    return this.driver;
+  }
+
+  // Bağlantı testi
+  async testConnection(): Promise<boolean> {
+    try {
+      const driver = await this.getDriver();
+      const session = driver.session();
+      await session.run('RETURN 1');
+      await session.close();
+      return true;
+    } catch (error) {
+      console.error('Neo4j bağlantı hatası:', error);
+      return false;
+    }
+  }
+
+  // Belge arama - Graph ilişkileri
+  async searchDocuments(query: string, filters?: {
+    dateFrom?: string;
+    dateTo?: string;
+    category?: string;
+    tags?: string[];
+  }): Promise<any[]> {
+    try {
+      const driver = await this.getDriver();
+      const session = driver.session();
+
+      // Cypher sorgusu - belge ilişkilerini arama
+      let cypherQuery = `
+        MATCH (d:Document)
+        WHERE d.content CONTAINS $query 
+           OR d.title CONTAINS $query
+           OR d.description CONTAINS $query
+      `;
+
+      const params: any = { query };
+
+      // Filtreler ekleme
+      if (filters?.dateFrom) {
+        cypherQuery += ` AND d.created_date >= $dateFrom`;
+        params.dateFrom = filters.dateFrom;
+      }
+
+      if (filters?.dateTo) {
+        cypherQuery += ` AND d.created_date <= $dateTo`;
+        params.dateTo = filters.dateTo;
+      }
+
+      if (filters?.category) {
+        cypherQuery += ` AND d.category = $category`;
+        params.category = filters.category;
+      }
+
+      if (filters?.tags && filters.tags.length > 0) {
+        cypherQuery += ` AND ANY(tag IN d.tags WHERE tag IN $tags)`;
+        params.tags = filters.tags;
+      }
+
+      cypherQuery += `
+        OPTIONAL MATCH (d)-[r:RELATED_TO|REFERENCES|PART_OF]-(related:Document)
+        RETURN d, collect(related) as relatedDocuments, collect(r) as relationships
+        ORDER BY d.relevance_score DESC, d.created_date DESC
+        LIMIT 50
+      `;
+
+      const result = await session.run(cypherQuery, params);
+      
+      const documents = result.records.map(record => ({
+        document: record.get('d').properties,
+        relatedDocuments: record.get('relatedDocuments').map((doc: any) => doc.properties),
+        relationships: record.get('relationships').map((rel: any) => ({
+          type: rel.type,
+          properties: rel.properties
+        }))
+      }));
+
+      await session.close();
+      return documents;
+
+    } catch (error) {
+      console.error('Neo4j arama hatası:', error);
+      throw new Error('Graph database araması başarısız oldu');
+    }
+  }
+
+  // Belge ilişki ağını getirme
+  async getDocumentNetwork(documentId: string, depth: number = 2): Promise<any> {
+    try {
+      const driver = await this.getDriver();
+      const session = driver.session();
+
+      const cypherQuery = `
+        MATCH (start:Document {id: $documentId})
+        CALL apoc.path.subgraphAll(start, {
+          relationshipFilter: "RELATED_TO|REFERENCES|PART_OF",
+          maxLevel: $depth
+        })
+        YIELD nodes, relationships
+        RETURN nodes, relationships
+      `;
+
+      const result = await session.run(cypherQuery, { 
+        documentId, 
+        depth 
+      });
+
+      const networkData = result.records.map(record => ({
+        nodes: record.get('nodes').map((node: any) => ({
+          id: node.identity.toString(),
+          labels: node.labels,
+          properties: node.properties
+        })),
+        relationships: record.get('relationships').map((rel: any) => ({
+          id: rel.identity.toString(),
+          type: rel.type,
+          startNode: rel.start.toString(),
+          endNode: rel.end.toString(),
+          properties: rel.properties
+        }))
+      }));
+
+      await session.close();
+      return networkData[0] || { nodes: [], relationships: [] };
+
+    } catch (error) {
+      console.error('Neo4j network hatası:', error);
+      throw new Error('Belge ağı alınamadı');
+    }
+  }
+
+  // Bağlantıyı kapatma
+  async close(): Promise<void> {
+    if (this.driver) {
+      await this.driver.close();
+      this.driver = null;
+    }
+  }
+}
+
+// Singleton instance
+export const neo4jService = new Neo4jService();
+
+// Type definitions
+export interface DocumentNode {
+  id: string;
+  title: string;
+  content: string;
+  description?: string;
+  category: string;
+  tags: string[];
+  created_date: string;
+  updated_date: string;
+  file_type: string;
+  file_size: number;
+  relevance_score?: number;
+}
+
+export interface DocumentRelationship {
+  type: 'RELATED_TO' | 'REFERENCES' | 'PART_OF';
+  properties: {
+    strength: number;
+    context?: string;
+    created_date: string;
+  };
+}
+
+export interface SearchResult {
+  document: DocumentNode;
+  relatedDocuments: DocumentNode[];
+  relationships: DocumentRelationship[];
+}

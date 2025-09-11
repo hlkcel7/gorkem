@@ -1,0 +1,189 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(210, 40%, 98%);
+  --foreground: hsl(222, 17%, 11%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(222, 17%, 11%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(222, 17%, 11%);
+  --primary: hsl(217, 91%, 60%);
+  --primary-foreground: hsl(0, 0%, 98%);
+  --secondary: hsl(210, 40%, 96%);
+  --secondary-foreground: hsl(222, 17%, 11%);
+  --muted: hsl(210, 40%, 96%);
+  --muted-foreground: hsl(215, 16%, 47%);
+  --accent: hsl(210, 40%, 96%);
+  --accent-foreground: hsl(222, 17%, 11%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --border: hsl(214, 32%, 91%);
+  --input: hsl(214, 32%, 91%);
+  --ring: hsl(217, 91%, 60%);
+  --chart-1: hsl(217, 91%, 60%);
+  --chart-2: hsl(173, 58%, 39%);
+  --chart-3: hsl(197, 37%, 24%);
+  --chart-4: hsl(43, 74%, 66%);
+  --chart-5: hsl(27, 87%, 67%);
+  --radius: 0.5rem;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: Menlo, monospace;
+}
+
+.dark {
+  --background: hsl(224, 71%, 4%);
+  --foreground: hsl(213, 31%, 91%);
+  --card: hsl(224, 71%, 4%);
+  --card-foreground: hsl(213, 31%, 91%);
+  --popover: hsl(224, 71%, 4%);
+  --popover-foreground: hsl(213, 31%, 91%);
+  --primary: hsl(217, 91%, 60%);
+  --primary-foreground: hsl(222, 84%, 4%);
+  --secondary: hsl(222, 47%, 11%);
+  --secondary-foreground: hsl(213, 31%, 91%);
+  --muted: hsl(223, 47%, 11%);
+  --muted-foreground: hsl(215, 20%, 65%);
+  --accent: hsl(216, 34%, 17%);
+  --accent-foreground: hsl(213, 31%, 91%);
+  --destructive: hsl(0, 63%, 31%);
+  --destructive-foreground: hsl(213, 31%, 91%);
+  --border: hsl(216, 34%, 17%);
+  --input: hsl(216, 34%, 17%);
+  --ring: hsl(217, 91%, 60%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Animation for loading spinner */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Table editing styles */
+.editable-cell input,
+.editable-cell select {
+  @apply bg-transparent border-none outline-none ring-0 w-full px-2 py-1 rounded;
+}
+
+.editable-cell input:focus,
+.editable-cell select:focus {
+  @apply ring-2 ring-primary bg-background;
+}
+
+/* Progress bar styles */
+.progress-bar {
+  @apply w-full bg-secondary rounded-full h-2;
+}
+
+.progress-fill {
+  @apply h-2 rounded-full transition-all duration-300;
+}
+
+/* Toast notification animations */
+.toast-enter {
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+.toast-enter-active {
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.toast-exit {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.toast-exit-active {
+  opacity: 0;
+  transform: translateX(100%);
+  transition: opacity 300ms, transform 300ms;
+}
+
+/* Mobile responsive table */
+@media (max-width: 768px) {
+  .table-container {
+    @apply overflow-x-auto;
+  }
+  
+  .table-container table {
+    @apply min-w-full;
+  }
+}
+
+/* Ensure full height and scrolling */
+html, body, #root {
+  height: 100vh;
+  overflow: auto;
+}
+
+/* Google Sheets pages specific scrolling */
+.page-content {
+  overflow-y: auto;
+  overflow-x: auto;
+  max-height: 100vh;
+}
+
+.page-content::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.page-content::-webkit-scrollbar-track {
+  background: hsl(210, 40%, 96%);
+}
+
+.page-content::-webkit-scrollbar-thumb {
+  background: hsl(217, 91%, 60%);
+  border-radius: 6px;
+}
+
+.page-content::-webkit-scrollbar-thumb:hover {
+  background: hsl(217, 91%, 50%);
+}
+
+/* Table container için yatay scroll */
+.table-container {
+  overflow-x: auto;
+  width: 100%;
+  max-width: 100vw;
+}

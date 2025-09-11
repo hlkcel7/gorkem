@@ -1,0 +1,995 @@
+<html lang="tr" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Görkem İnşaat - Proje ve Muhasebe Takip Sistemi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                borderRadius: {
+                    lg: "var(--radius)",
+                    md: "calc(var(--radius) - 2px)",
+                    sm: "calc(var(--radius) - 4px)",
+                },
+                colors: {
+                    background: "var(--background)",
+                    foreground: "var(--foreground)",
+                    card: {
+                        DEFAULT: "var(--card)",
+                        foreground: "var(--card-foreground)",
+                    },
+                    popover: {
+                        DEFAULT: "var(--popover)",
+                        foreground: "var(--popover-foreground)",
+                    },
+                    primary: {
+                        DEFAULT: "var(--primary)",
+                        foreground: "var(--primary-foreground)",
+                    },
+                    secondary: {
+                        DEFAULT: "var(--secondary)",
+                        foreground: "var(--secondary-foreground)",
+                    },
+                    muted: {
+                        DEFAULT: "var(--muted)",
+                        foreground: "var(--muted-foreground)",
+                    },
+                    accent: {
+                        DEFAULT: "var(--accent)",
+                        foreground: "var(--accent-foreground)",
+                    },
+                    destructive: {
+                        DEFAULT: "var(--destructive)",
+                        foreground: "var(--destructive-foreground)",
+                    },
+                    border: "var(--border)",
+                    input: "var(--input)",
+                    ring: "var(--ring)",
+                    chart: {
+                        "1": "var(--chart-1)",
+                        "2": "var(--chart-2)",
+                        "3": "var(--chart-3)",
+                        "4": "var(--chart-4)",
+                        "5": "var(--chart-5)",
+                    }
+                },
+                fontFamily: {
+                    sans: ["var(--font-sans)"],
+                }
+            },
+        }
+    };
+    </script>
+    
+    <style type="text/css">
+        :root {
+            --background: hsl(210 40% 98%);
+            --foreground: hsl(222 17% 11%);
+            --card: hsl(0 0% 100%);
+            --card-foreground: hsl(222 17% 11%);
+            --popover: hsl(0 0% 100%);
+            --popover-foreground: hsl(222 17% 11%);
+            --primary: hsl(217 91% 60%);
+            --primary-foreground: hsl(0 0% 98%);
+            --secondary: hsl(210 40% 96%);
+            --secondary-foreground: hsl(222 17% 11%);
+            --muted: hsl(210 40% 96%);
+            --muted-foreground: hsl(215 16% 47%);
+            --accent: hsl(210 40% 96%);
+            --accent-foreground: hsl(222 17% 11%);
+            --destructive: hsl(0 84% 60%);
+            --destructive-foreground: hsl(0 0% 98%);
+            --border: hsl(214 32% 91%);
+            --input: hsl(214 32% 91%);
+            --ring: hsl(217 91% 60%);
+            --radius: 0.5rem;
+            --chart-1: hsl(217 91% 60%);
+            --chart-2: hsl(173 58% 39%);
+            --chart-3: hsl(197 37% 24%);
+            --chart-4: hsl(43 74% 66%);
+            --chart-5: hsl(27 87% 67%);
+            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        
+        .dark {
+            --background: hsl(224 71% 4%);
+            --foreground: hsl(213 31% 91%);
+            --card: hsl(224 71% 4%);
+            --card-foreground: hsl(213 31% 91%);
+            --popover: hsl(224 71% 4%);
+            --popover-foreground: hsl(213 31% 91%);
+            --primary: hsl(217 91% 60%);
+            --primary-foreground: hsl(222 84% 4%);
+            --secondary: hsl(222 47% 11%);
+            --secondary-foreground: hsl(213 31% 91%);
+            --muted: hsl(223 47% 11%);
+            --muted-foreground: hsl(215 20% 65%);
+            --accent: hsl(216 34% 17%);
+            --accent-foreground: hsl(213 31% 91%);
+            --destructive: hsl(0 63% 31%);
+            --destructive-foreground: hsl(213 31% 91%);
+            --border: hsl(216 34% 17%);
+            --input: hsl(216 34% 17%);
+            --ring: hsl(217 91% 60%);
+        }
+    </style>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="h-full bg-background font-sans antialiased">
+    <!-- @COMPONENT: AppLayout [main layout wrapper] -->
+    <div class="flex h-screen overflow-hidden">
+        
+        <!-- @COMPONENT: Sidebar [navigation and sheets list] -->
+        <div class="hidden md:flex md:w-80 md:flex-col">
+            <div class="flex h-0 flex-1 flex-col bg-card border-r border-border">
+                <!-- Header -->
+                <div class="flex h-16 flex-shrink-0 items-center px-6 border-b border-border">
+                    <div class="flex items-center">
+                        <i class="fas fa-building text-primary text-2xl mr-3"></i>
+                        <div>
+                            <h1 class="text-lg font-semibold text-foreground">Görkem İnşaat</h1>
+                            <p class="text-sm text-muted-foreground">Proje Takip Sistemi</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation -->
+                <nav class="flex-1 px-4 py-6 space-y-2">
+                    <a href="#" class="group flex items-center px-3 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground" data-view="dashboard">
+                        <i class="fas fa-chart-line mr-3 h-5 w-5"></i>
+                        Dashboard
+                    </a>
+                    
+                    <!-- Google Sheets List -->
+                    <div class="mt-6">
+                        <h3 class="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            Google Sheets
+                        </h3>
+                        <div class="mt-2 space-y-1" data-mock="true">
+                            <!-- @MAP: sheets.map(sheet => ( -->
+                            <a href="#" class="group flex items-center px-3 py-2 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground rounded-md transition-colors" data-view="sheet" data-bind="sheet.name">
+                                <i class="fas fa-table mr-3 h-4 w-4 text-muted-foreground"></i>
+                                <span data-bind="sheet.name">Muhasebe 2025</span>
+                                <div class="ml-auto flex items-center space-x-1">
+                                    <button class="opacity-0 group-hover:opacity-100 p-1 hover:bg-secondary rounded" data-event="click:editSheet">
+                                        <i class="fas fa-edit h-3 w-3"></i>
+                                    </button>
+                                    <button class="opacity-0 group-hover:opacity-100 p-1 hover:bg-destructive hover:text-destructive-foreground rounded" data-event="click:deleteSheet">
+                                        <i class="fas fa-trash h-3 w-3"></i>
+                                    </button>
+                                </div>
+                            </a>
+                            <!-- @END_MAP )) -->
+                            
+                            <a href="#" class="group flex items-center px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-md transition-colors" data-mock="true">
+                                <i class="fas fa-table mr-3 h-4 w-4"></i>
+                                <span>Projeler 2025</span>
+                                <div class="ml-auto flex items-center space-x-1">
+                                    <button class="opacity-0 group-hover:opacity-100 p-1 hover:bg-secondary rounded">
+                                        <i class="fas fa-edit h-3 w-3"></i>
+                                    </button>
+                                    <button class="opacity-0 group-hover:opacity-100 p-1 hover:bg-destructive hover:text-destructive-foreground rounded">
+                                        <i class="fas fa-trash h-3 w-3"></i>
+                                    </button>
+                                </div>
+                            </a>
+                            
+                            <a href="#" class="group flex items-center px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-md transition-colors" data-mock="true">
+                                <i class="fas fa-table mr-3 h-4 w-4"></i>
+                                <span>Personel Takip</span>
+                                <div class="ml-auto flex items-center space-x-1">
+                                    <button class="opacity-0 group-hover:opacity-100 p-1 hover:bg-secondary rounded">
+                                        <i class="fas fa-edit h-3 w-3"></i>
+                                    </button>
+                                    <button class="opacity-0 group-hover:opacity-100 p-1 hover:bg-destructive hover:text-destructive-foreground rounded">
+                                        <i class="fas fa-trash h-3 w-3"></i>
+                                    </button>
+                                </div>
+                            </a>
+                        </div>
+                        
+                        <button class="mt-3 w-full flex items-center px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-md border-2 border-dashed border-border transition-colors" data-event="click:createSheet">
+                            <i class="fas fa-plus mr-3 h-4 w-4"></i>
+                            Yeni Sheet Oluştur
+                        </button>
+                    </div>
+                </nav>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: Sidebar -->
+
+        <!-- @COMPONENT: MainContent [main application area] -->
+        <div class="flex flex-1 flex-col overflow-hidden">
+            <!-- Top bar -->
+            <div class="flex h-16 flex-shrink-0 items-center justify-between px-6 bg-card border-b border-border">
+                <div class="flex items-center">
+                    <button class="md:hidden mr-4 p-2 rounded-md hover:bg-accent" data-event="click:toggleSidebar">
+                        <i class="fas fa-bars h-5 w-5"></i>
+                    </button>
+                    <h2 class="text-xl font-semibold text-foreground" data-bind="currentView.title">Dashboard</h2>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2 text-sm text-muted-foreground">
+                        <i class="fas fa-sync-alt h-4 w-4"></i>
+                        <span data-bind="lastSyncTime">Son senkronizasyon: 14:32</span>
+                    </div>
+                    <button class="flex items-center space-x-2 px-3 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors" data-event="click:syncData">
+                        <i class="fas fa-cloud-download-alt h-4 w-4"></i>
+                        <span>Senkronize Et</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main content area -->
+            <main class="flex-1 overflow-auto bg-background">
+                
+                <!-- @COMPONENT: DashboardView [main dashboard] -->
+                <div id="dashboard-view" class="p-6 space-y-6" data-mock="true">
+                    
+                    <!-- KPI Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="bg-card p-6 rounded-lg border border-border shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-muted-foreground">Toplam Gelir</p>
+                                    <p class="text-2xl font-bold text-foreground" data-bind="totalIncome">₺2.450.000</p>
+                                    <p class="text-xs text-green-600 mt-1">
+                                        <i class="fas fa-arrow-up mr-1"></i>
+                                        +12.5% bu ay
+                                    </p>
+                                </div>
+                                <div class="p-3 bg-green-50 rounded-full">
+                                    <i class="fas fa-arrow-trend-up text-green-600 h-6 w-6"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-card p-6 rounded-lg border border-border shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-muted-foreground">Toplam Gider</p>
+                                    <p class="text-2xl font-bold text-foreground" data-bind="totalExpenses">₺1.850.000</p>
+                                    <p class="text-xs text-red-600 mt-1">
+                                        <i class="fas fa-arrow-up mr-1"></i>
+                                        +8.2% bu ay
+                                    </p>
+                                </div>
+                                <div class="p-3 bg-red-50 rounded-full">
+                                    <i class="fas fa-arrow-trend-down text-red-600 h-6 w-6"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-card p-6 rounded-lg border border-border shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-muted-foreground">Net Kâr</p>
+                                    <p class="text-2xl font-bold text-foreground" data-bind="netProfit">₺600.000</p>
+                                    <p class="text-xs text-green-600 mt-1">
+                                        <i class="fas fa-arrow-up mr-1"></i>
+                                        +24.3% bu ay
+                                    </p>
+                                </div>
+                                <div class="p-3 bg-blue-50 rounded-full">
+                                    <i class="fas fa-chart-pie text-blue-600 h-6 w-6"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-card p-6 rounded-lg border border-border shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-muted-foreground">Aktif Projeler</p>
+                                    <p class="text-2xl font-bold text-foreground" data-bind="activeProjects">12</p>
+                                    <p class="text-xs text-blue-600 mt-1">
+                                        <i class="fas fa-plus mr-1"></i>
+                                        2 yeni proje
+                                    </p>
+                                </div>
+                                <div class="p-3 bg-orange-50 rounded-full">
+                                    <i class="fas fa-building text-orange-600 h-6 w-6"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Section -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Monthly Revenue Chart -->
+                        <div class="bg-card p-6 rounded-lg border border-border shadow-sm">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-semibold text-foreground">Aylık Gelir/Gider</h3>
+                                <div class="flex space-x-2">
+                                    <button class="px-3 py-1 text-xs bg-primary text-primary-foreground rounded-md">6 Ay</button>
+                                    <button class="px-3 py-1 text-xs bg-secondary text-secondary-foreground rounded-md">1 Yıl</button>
+                                </div>
+                            </div>
+                            <div class="h-64">
+                                <canvas id="revenueChart" class="w-full h-full"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Expense Categories -->
+                        <div class="bg-card p-6 rounded-lg border border-border shadow-sm">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-semibold text-foreground">Gider Kategorileri</h3>
+                                <button class="text-sm text-primary hover:text-primary/80">Detay</button>
+                            </div>
+                            <div class="h-64">
+                                <canvas id="expenseChart" class="w-full h-full"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Projects -->
+                    <div class="bg-card rounded-lg border border-border shadow-sm">
+                        <div class="px-6 py-4 border-b border-border">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-foreground">Aktif Projeler</h3>
+                                <button class="flex items-center space-x-2 px-3 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors text-sm" data-event="click:addProject">
+                                    <i class="fas fa-plus h-4 w-4"></i>
+                                    <span>Yeni Proje</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <div class="space-y-4" data-mock="true">
+                                <!-- @MAP: activeProjects.map(project => ( -->
+                                <div class="flex items-center justify-between p-4 bg-muted rounded-lg">
+                                    <div class="flex-1">
+                                        <h4 class="font-medium text-foreground" data-bind="project.name">Yalı Villaları</h4>
+                                        <p class="text-sm text-muted-foreground" data-bind="project.description">Başlangıç: 01.06.2025 | Hedef Bitiş: 15.12.2025</p>
+                                    </div>
+                                    <div class="flex items-center space-x-4">
+                                        <div class="text-right">
+                                            <p class="text-sm font-medium text-foreground" data-bind="project.budget">₺320.000</p>
+                                            <p class="text-xs text-muted-foreground">Harcama</p>
+                                        </div>
+                                        <div class="w-24">
+                                            <div class="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                                                <span>İlerleme</span>
+                                                <span data-bind="project.progress">45%</span>
+                                            </div>
+                                            <div class="w-full bg-secondary rounded-full h-2">
+                                                <div class="bg-primary h-2 rounded-full" style="width: 45%" data-bind="project.progressWidth"></div>
+                                            </div>
+                                        </div>
+                                        <button class="text-primary hover:text-primary/80">
+                                            <i class="fas fa-arrow-right h-4 w-4"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <!-- @END_MAP )) -->
+                                
+                                <div class="flex items-center justify-between p-4 bg-muted rounded-lg" data-mock="true">
+                                    <div class="flex-1">
+                                        <h4 class="font-medium text-foreground">Güngören Konut</h4>
+                                        <p class="text-sm text-muted-foreground">Başlangıç: 01.05.2025 | Hedef Bitiş: 30.09.2025</p>
+                                    </div>
+                                    <div class="flex items-center space-x-4">
+                                        <div class="text-right">
+                                            <p class="text-sm font-medium text-foreground">₺270.000</p>
+                                            <p class="text-xs text-muted-foreground">Harcama</p>
+                                        </div>
+                                        <div class="w-24">
+                                            <div class="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                                                <span>İlerleme</span>
+                                                <span>100%</span>
+                                            </div>
+                                            <div class="w-full bg-secondary rounded-full h-2">
+                                                <div class="bg-green-500 h-2 rounded-full" style="width: 100%"></div>
+                                            </div>
+                                        </div>
+                                        <button class="text-primary hover:text-primary/80">
+                                            <i class="fas fa-arrow-right h-4 w-4"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center justify-between p-4 bg-muted rounded-lg" data-mock="true">
+                                    <div class="flex-1">
+                                        <h4 class="font-medium text-foreground">Ankara Plaza</h4>
+                                        <p class="text-sm text-muted-foreground">Başlangıç: 15.07.2025 | Hedef Bitiş: 20.01.2026</p>
+                                    </div>
+                                    <div class="flex items-center space-x-4">
+                                        <div class="text-right">
+                                            <p class="text-sm font-medium text-foreground">₺180.000</p>
+                                            <p class="text-xs text-muted-foreground">Harcama</p>
+                                        </div>
+                                        <div class="w-24">
+                                            <div class="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                                                <span>İlerleme</span>
+                                                <span>22%</span>
+                                            </div>
+                                            <div class="w-full bg-secondary rounded-full h-2">
+                                                <div class="bg-primary h-2 rounded-full" style="width: 22%"></div>
+                                            </div>
+                                        </div>
+                                        <button class="text-primary hover:text-primary/80">
+                                            <i class="fas fa-arrow-right h-4 w-4"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: DashboardView -->
+
+                <!-- @COMPONENT: SheetView [table data view] -->
+                <div id="sheet-view" class="p-6 space-y-6 hidden" data-mock="true">
+                    <!-- Sheet Actions Header -->
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-xl font-semibold text-foreground" data-bind="selectedSheet.name">Muhasebe 2025</h3>
+                            <p class="text-sm text-muted-foreground" data-bind="selectedSheet.recordCount">247 kayıt</p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <div class="relative">
+                                <input type="text" placeholder="Ara..." class="pl-10 pr-4 py-2 bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-sm" />
+                                <i class="fas fa-search absolute left-3 top-2.5 h-4 w-4 text-muted-foreground"></i>
+                            </div>
+                            <button class="flex items-center space-x-2 px-3 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors text-sm" data-event="click:addRecord">
+                                <i class="fas fa-plus h-4 w-4"></i>
+                                <span>Yeni Kayıt</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Data Table -->
+                    <div class="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-muted">
+                                    <tr data-mock="true">
+                                        <!-- @MAP: headers.map(header => ( -->
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider" data-bind="header.name">
+                                            Tarih
+                                        </th>
+                                        <!-- @END_MAP )) -->
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Açıklama</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Tutar</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Tür</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Kategori</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">İşlemler</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-card divide-y divide-border">
+                                    <!-- @MAP: records.map(record => ( -->
+                                    <tr class="hover:bg-muted/50 transition-colors" data-mock="true">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-foreground" data-bind="record.date">
+                                            <input type="date" value="2025-01-15" class="bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-ring rounded px-2 py-1" data-editable="true" />
+                                        </td>
+                                        <td class="px-6 py-4 text-sm text-foreground" data-bind="record.description">
+                                            <input type="text" value="Kaba inşaat gideri" class="bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-ring rounded px-2 py-1 w-full" data-editable="true" />
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-foreground" data-bind="record.amount">
+                                            <input type="number" value="45000" class="bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-ring rounded px-2 py-1" data-editable="true" />
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm" data-bind="record.type">
+                                            <select class="bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-ring rounded px-2 py-1" data-editable="true">
+                                                <option value="Gider" selected>Gider</option>
+                                                <option value="Gelir">Gelir</option>
+                                            </select>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-foreground" data-bind="record.category">
+                                            <input type="text" value="İnşaat" class="bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-ring rounded px-2 py-1" data-editable="true" />
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                                            <div class="flex space-x-2">
+                                                <button class="text-primary hover:text-primary/80" data-event="click:saveRecord">
+                                                    <i class="fas fa-check h-4 w-4"></i>
+                                                </button>
+                                                <button class="text-destructive hover:text-destructive/80" data-event="click:deleteRecord">
+                                                    <i class="fas fa-trash h-4 w-4"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <!-- @END_MAP )) -->
+                                    
+                                    <tr class="hover:bg-muted/50 transition-colors" data-mock="true">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                                            <input type="date" value="2025-01-18" class="bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-ring rounded px-2 py-1" />
+                                        </td>
+                                        <td class="px-6 py-4 text-sm text-foreground">
+                                            <input type="text" value="Müşteri ödemesi" class="bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-ring rounded px-2 py-1 w-full" />
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                                            <input type="number" value="75000" class="bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-ring rounded px-2 py-1" />
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                            <select class="bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-ring rounded px-2 py-1">
+                                                <option value="Gelir" selected>Gelir</option>
+                                                <option value="Gider">Gider</option>
+                                            </select>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                                            <input type="text" value="Proje Satışı" class="bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-ring rounded px-2 py-1" />
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                                            <div class="flex space-x-2">
+                                                <button class="text-primary hover:text-primary/80">
+                                                    <i class="fas fa-check h-4 w-4"></i>
+                                                </button>
+                                                <button class="text-destructive hover:text-destructive/80">
+                                                    <i class="fas fa-trash h-4 w-4"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                    <tr class="hover:bg-muted/50 transition-colors" data-mock="true">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                                            <input type="date" value="2025-01-20" class="bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-ring rounded px-2 py-1" />
+                                        </td>
+                                        <td class="px-6 py-4 text-sm text-foreground">
+                                            <input type="text" value="Ofis kirası" class="bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-ring rounded px-2 py-1 w-full" />
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                                            <input type="number" value="15000" class="bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-ring rounded px-2 py-1" />
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                            <select class="bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-ring rounded px-2 py-1">
+                                                <option value="Gider" selected>Gider</option>
+                                                <option value="Gelir">Gelir</option>
+                                            </select>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-foreground">
+                                            <input type="text" value="Genel Gider" class="bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-ring rounded px-2 py-1" />
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                                            <div class="flex space-x-2">
+                                                <button class="text-primary hover:text-primary/80">
+                                                    <i class="fas fa-check h-4 w-4"></i>
+                                                </button>
+                                                <button class="text-destructive hover:text-destructive/80">
+                                                    <i class="fas fa-trash h-4 w-4"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        <div class="px-6 py-3 bg-muted border-t border-border">
+                            <div class="flex items-center justify-between">
+                                <p class="text-sm text-muted-foreground">
+                                    <span data-bind="pagination.showing">1-50</span> / <span data-bind="pagination.total">247</span> kayıt gösteriliyor
+                                </p>
+                                <div class="flex space-x-2">
+                                    <button class="px-3 py-1 text-sm bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 disabled:opacity-50" data-event="click:previousPage">
+                                        Önceki
+                                    </button>
+                                    <button class="px-3 py-1 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90" data-event="click:nextPage">
+                                        Sonraki
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: SheetView -->
+                
+            </main>
+        </div>
+        <!-- @END_COMPONENT: MainContent -->
+    </div>
+    <!-- @END_COMPONENT: AppLayout -->
+
+    <!-- @COMPONENT: AddRecordModal [form modal for new records] -->
+    <div id="add-record-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50" data-modal="true">
+        <div class="bg-card p-6 rounded-lg shadow-xl max-w-md w-full mx-4 border border-border">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-foreground">Yeni Kayıt Ekle</h3>
+                <button class="text-muted-foreground hover:text-foreground" data-event="click:closeModal">
+                    <i class="fas fa-times h-5 w-5"></i>
+                </button>
+            </div>
+            
+            <form class="space-y-4" data-event="submit:addRecord">
+                <!-- @STATE: formData:object = {} -->
+                <div>
+                    <label class="block text-sm font-medium text-foreground mb-1">Tarih</label>
+                    <input type="date" class="w-full px-3 py-2 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-sm" required />
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-foreground mb-1">Açıklama</label>
+                    <input type="text" placeholder="İşlem açıklaması" class="w-full px-3 py-2 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-sm" required />
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-foreground mb-1">Tutar</label>
+                    <input type="number" placeholder="0" class="w-full px-3 py-2 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-sm" required />
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-foreground mb-1">Tür</label>
+                    <select class="w-full px-3 py-2 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-sm" required>
+                        <option value="">Seçiniz</option>
+                        <option value="Gelir">Gelir</option>
+                        <option value="Gider">Gider</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-foreground mb-1">Kategori</label>
+                    <input type="text" placeholder="Kategori" class="w-full px-3 py-2 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-sm" required />
+                </div>
+                
+                <div class="flex space-x-3 pt-4">
+                    <button type="button" class="flex-1 px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 transition-colors" data-event="click:closeModal">
+                        İptal
+                    </button>
+                    <button type="submit" class="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
+                        Kaydet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: AddRecordModal -->
+
+    <!-- @COMPONENT: CreateSheetModal [modal for creating new sheets] -->
+    <div id="create-sheet-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50" data-modal="true">
+        <div class="bg-card p-6 rounded-lg shadow-xl max-w-md w-full mx-4 border border-border">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-foreground">Yeni Sheet Oluştur</h3>
+                <button class="text-muted-foreground hover:text-foreground" data-event="click:closeModal">
+                    <i class="fas fa-times h-5 w-5"></i>
+                </button>
+            </div>
+            
+            <form class="space-y-4" data-event="submit:createSheet">
+                <div>
+                    <label class="block text-sm font-medium text-foreground mb-1">Sheet Adı</label>
+                    <input type="text" placeholder="Örn: Muhasebe 2025" class="w-full px-3 py-2 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-sm" required />
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-foreground mb-1">Şablon</label>
+                    <select class="w-full px-3 py-2 bg-input border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-sm">
+                        <option value="custom">Özel</option>
+                        <option value="accounting">Muhasebe Şablonu</option>
+                        <option value="project">Proje Şablonu</option>
+                        <option value="personnel">Personel Şablonu</option>
+                    </select>
+                </div>
+                
+                <div class="flex space-x-3 pt-4">
+                    <button type="button" class="flex-1 px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 transition-colors" data-event="click:closeModal">
+                        İptal
+                    </button>
+                    <button type="submit" class="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
+                        Oluştur
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: CreateSheetModal -->
+
+    <!-- @COMPONENT: LoadingOverlay [loading state] -->
+    <div id="loading-overlay" class="fixed inset-0 z-40 hidden items-center justify-center bg-black bg-opacity-30" data-loading="true">
+        <div class="bg-card p-6 rounded-lg shadow-xl">
+            <div class="flex items-center space-x-3">
+                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                <span class="text-foreground" data-bind="loadingMessage">Veriler yükleniyor...</span>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: LoadingOverlay -->
+
+    <!-- @COMPONENT: ToastNotification [success/error messages] -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2" data-notifications="true">
+        <!-- @MAP: notifications.map(notification => ( -->
+        <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-md shadow-sm flex items-center space-x-3 min-w-80 hidden" data-toast="success">
+            <i class="fas fa-check-circle h-5 w-5"></i>
+            <span data-bind="notification.message">Kayıt başarıyla eklendi!</span>
+            <button class="ml-auto text-green-600 hover:text-green-800" data-event="click:dismissToast">
+                <i class="fas fa-times h-4 w-4"></i>
+            </button>
+        </div>
+        <!-- @END_MAP )) -->
+    </div>
+    <!-- @END_COMPONENT: ToastNotification -->
+
+    <!-- Mobile Sidebar Overlay -->
+    <div id="mobile-sidebar-overlay" class="md:hidden fixed inset-0 z-40 hidden" data-mobile-sidebar="true">
+        <div class="fixed inset-0 bg-black bg-opacity-50" data-event="click:closeMobileSidebar"></div>
+        <div class="fixed inset-y-0 left-0 w-80 bg-card border-r border-border">
+            <!-- Mobile sidebar content (same as desktop) -->
+            <div class="flex h-16 flex-shrink-0 items-center px-6 border-b border-border">
+                <div class="flex items-center">
+                    <i class="fas fa-building text-primary text-2xl mr-3"></i>
+                    <div>
+                        <h1 class="text-lg font-semibold text-foreground">Görkem İnşaat</h1>
+                        <p class="text-sm text-muted-foreground">Proje Takip Sistemi</p>
+                    </div>
+                </div>
+            </div>
+            
+            <nav class="flex-1 px-4 py-6 space-y-2">
+                <a href="#" class="group flex items-center px-3 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground">
+                    <i class="fas fa-chart-line mr-3 h-5 w-5"></i>
+                    Dashboard
+                </a>
+                
+                <div class="mt-6">
+                    <h3 class="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Google Sheets
+                    </h3>
+                    <div class="mt-2 space-y-1">
+                        <a href="#" class="group flex items-center px-3 py-2 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground rounded-md transition-colors" data-mock="true">
+                            <i class="fas fa-table mr-3 h-4 w-4 text-muted-foreground"></i>
+                            <span>Muhasebe 2025</span>
+                        </a>
+                        <a href="#" class="group flex items-center px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-md transition-colors" data-mock="true">
+                            <i class="fas fa-table mr-3 h-4 w-4"></i>
+                            <span>Projeler 2025</span>
+                        </a>
+                        <a href="#" class="group flex items-center px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-md transition-colors" data-mock="true">
+                            <i class="fas fa-table mr-3 h-4 w-4"></i>
+                            <span>Personel Takip</span>
+                        </a>
+                    </div>
+                    
+                    <button class="mt-3 w-full flex items-center px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-md border-2 border-dashed border-border transition-colors">
+                        <i class="fas fa-plus mr-3 h-4 w-4"></i>
+                        Yeni Sheet Oluştur
+                    </button>
+                </div>
+            </nav>
+        </div>
+    </div>
+
+    <script>
+        // TODO: Implement Google Sheets API integration, state management, and real business logic
+        
+        (function() {
+            // Initialize Charts
+            function initializeCharts() {
+                // Revenue Chart
+                const revenueCtx = document.getElementById('revenueChart');
+                if (revenueCtx) {
+                    new Chart(revenueCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz'],
+                            datasets: [
+                                {
+                                    label: 'Gelir',
+                                    data: [420000, 380000, 520000, 445000, 610000, 580000],
+                                    backgroundColor: 'hsl(217 91% 60%)',
+                                    borderRadius: 4
+                                },
+                                {
+                                    label: 'Gider', 
+                                    data: [320000, 290000, 380000, 350000, 420000, 390000],
+                                    backgroundColor: 'hsl(0 84% 60%)',
+                                    borderRadius: 4
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return '₺' + value.toLocaleString('tr-TR');
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // Expense Chart
+                const expenseCtx = document.getElementById('expenseChart');
+                if (expenseCtx) {
+                    new Chart(expenseCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['İnşaat', 'Personel', 'Genel Gider', 'Malzeme', 'Diğer'],
+                            datasets: [{
+                                data: [45, 25, 15, 10, 5],
+                                backgroundColor: [
+                                    'hsl(217 91% 60%)',
+                                    'hsl(173 58% 39%)',
+                                    'hsl(197 37% 24%)',
+                                    'hsl(43 74% 66%)',
+                                    'hsl(27 87% 67%)'
+                                ],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Modal Management
+            function setupModals() {
+                // Add Record Modal
+                const addRecordButtons = document.querySelectorAll('[data-event="click:addRecord"]');
+                const addRecordModal = document.getElementById('add-record-modal');
+                
+                addRecordButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        addRecordModal.classList.remove('hidden');
+                        addRecordModal.classList.add('flex');
+                    });
+                });
+
+                // Create Sheet Modal
+                const createSheetButtons = document.querySelectorAll('[data-event="click:createSheet"]');
+                const createSheetModal = document.getElementById('create-sheet-modal');
+                
+                createSheetButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        createSheetModal.classList.remove('hidden');
+                        createSheetModal.classList.add('flex');
+                    });
+                });
+
+                // Close Modal buttons
+                document.querySelectorAll('[data-event="click:closeModal"]').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const modal = e.target.closest('[data-modal="true"]');
+                        if (modal) {
+                            modal.classList.add('hidden');
+                            modal.classList.remove('flex');
+                        }
+                    });
+                });
+            }
+
+            // View Management
+            function setupViewSwitching() {
+                const dashboardView = document.getElementById('dashboard-view');
+                const sheetView = document.getElementById('sheet-view');
+                
+                // Dashboard navigation
+                document.querySelectorAll('[data-view="dashboard"]').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        dashboardView.classList.remove('hidden');
+                        sheetView.classList.add('hidden');
+                        
+                        // Update active state
+                        document.querySelectorAll('nav a').forEach(link => {
+                            link.classList.remove('bg-primary', 'text-primary-foreground');
+                            link.classList.add('text-foreground');
+                        });
+                        button.classList.add('bg-primary', 'text-primary-foreground');
+                        button.classList.remove('text-foreground');
+                    });
+                });
+
+                // Sheet navigation
+                document.querySelectorAll('[data-view="sheet"]').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        dashboardView.classList.add('hidden');
+                        sheetView.classList.remove('hidden');
+                        
+                        // Update active state
+                        document.querySelectorAll('nav a').forEach(link => {
+                            link.classList.remove('bg-primary', 'text-primary-foreground');
+                            link.classList.add('text-foreground');
+                        });
+                        button.classList.add('bg-primary', 'text-primary-foreground');
+                        button.classList.remove('text-foreground');
+                    });
+                });
+            }
+
+            // Mobile Sidebar
+            function setupMobileSidebar() {
+                const toggleButton = document.querySelector('[data-event="click:toggleSidebar"]');
+                const overlay = document.getElementById('mobile-sidebar-overlay');
+                const closeButton = document.querySelector('[data-event="click:closeMobileSidebar"]');
+                
+                if (toggleButton) {
+                    toggleButton.addEventListener('click', () => {
+                        overlay.classList.remove('hidden');
+                    });
+                }
+                
+                if (closeButton) {
+                    closeButton.addEventListener('click', () => {
+                        overlay.classList.add('hidden');
+                    });
+                }
+            }
+
+            // Toast Notifications
+            function showToast(message, type = 'success') {
+                const toast = document.querySelector(`[data-toast="${type}"]`);
+                if (toast) {
+                    toast.querySelector('span').textContent = message;
+                    toast.classList.remove('hidden');
+                    
+                    setTimeout(() => {
+                        toast.classList.add('hidden');
+                    }, 3000);
+                }
+            }
+
+            // Form Submissions
+            function setupFormHandlers() {
+                document.querySelectorAll('form').forEach(form => {
+                    form.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        
+                        // Show loading
+                        const loadingOverlay = document.getElementById('loading-overlay');
+                        loadingOverlay.classList.remove('hidden');
+                        loadingOverlay.classList.add('flex');
+                        
+                        // Simulate API call
+                        setTimeout(() => {
+                            loadingOverlay.classList.add('hidden');
+                            loadingOverlay.classList.remove('flex');
+                            
+                            // Close modal
+                            const modal = form.closest('[data-modal="true"]');
+                            if (modal) {
+                                modal.classList.add('hidden');
+                                modal.classList.remove('flex');
+                            }
+                            
+                            // Show success message
+                            showToast('İşlem başarıyla tamamlandı!');
+                            
+                            // TODO: Actually submit data to Google Sheets API
+                        }, 1500);
+                    });
+                });
+            }
+
+            // Initialize everything when DOM is loaded
+            document.addEventListener('DOMContentLoaded', function() {
+                initializeCharts();
+                setupModals();
+                setupViewSwitching();
+                setupMobileSidebar();
+                setupFormHandlers();
+                
+                // TODO: Initialize Google Sheets API connection
+                // TODO: Load initial data from sheets
+                // TODO: Setup real-time data synchronization
+            });
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1700 @@
+/**
+ * Document Search Page
+ * 
+ * Debug Panel Kontrolü:
+ * - Debug panelini görmek için: SHOW_DEBUG_PANEL = true yapın
+ * - Debug panelini gizlemek için: SHOW_DEBUG_PANEL = false yapın
+ * - Backup dosyası: document-search.tsx.debug-backup
+ */
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Progress } from '../components/ui/progress';
+import { Separator } from '../components/ui/separator';
+import { Alert, AlertDescription } from '../components/ui/alert';
+import { Textarea } from '../components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Checkbox } from '../components/ui/checkbox';
+import { Label } from '../components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../components/ui/accordion';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from '../components/ui/dropdown-menu';
+import { 
+  Search, 
+  Database, 
+  Network, 
+  Brain, 
+  FileText, 
+  Filter,
+  Settings,
+  RefreshCw,
+  Download,
+  Eye,
+  Clock,
+  Tag,
+  Folder,
+  HardDrive,
+  Zap,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  TrendingUp,
+  BarChart3,
+  Users,
+  Link,
+  FileIcon,
+  Calendar,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  CloudSync,
+  User
+} from 'lucide-react';
+import { useDocumentSearch } from '../hooks/useDocumentSearch';
+import { useAuth } from '../hooks/useAuth';
+import { useUserSettings } from '../hooks/useUserSettings';
+import { UserSettings } from '../services/supabase';
+
+// Development debug panel toggle - true yaparak debug panelini geri getirebilirsiniz
+const SHOW_DEBUG_PANEL = false;
+
+export default function DocumentSearchPage() {
+  const {
+    // State
+    isLoading,
+    supabaseResults,
+    searchDecision,
+    queryEnhancement,
+    searchMethod,
+    aiAnalysis,
+    error,
+    lastQuery,
+    stats,
+    connectionState,
+    availableOptions,
+    
+    // Actions
+    configureServices,
+    testConnections,
+    search,
+    vectorSearch,
+    advancedSearch,
+    getDocumentNetwork,
+    findSimilarDocuments,
+    clearResults,
+    
+    // Computed
+    isAnyDatabaseConnected,
+    totalResults,
+    hasResults
+  } = useDocumentSearch();
+
+  // Local state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('search');
+  const [showFilters, setShowFilters] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  
+  // Kullanıcı ayarları hook'u
+  const { user } = useAuth();
+  const { 
+    settings, 
+    isLoading: settingsLoading, 
+    saveUserSettings 
+  } = useUserSettings();
+  
+  // enableAI ayarı
+  const [enableAI, setEnableAI] = useState<boolean>(settings?.enableAI ?? false);
+  
+  // Client-side filtering and sorting states
+  const [clientFilters, setClientFilters] = useState({
+    importantOnly: false,
+    last30Days: false,
+    highScore: false,
+  });
+  
+  const [clientSort, setClientSort] = useState({
+    field: 'score',
+    direction: 'desc' as 'asc' | 'desc'
+  });
+  
+  // Filters
+  const [filters, setFilters] = useState({
+    dateFrom: '',
+    dateTo: '',
+    type_of_corr: '',
+    severity_rate: '',
+    inc_out: '',
+    keywords: [] as string[],
+    internal_no: '',
+    sortBy: 'letter_date' as 'letter_date' | 'similarity' | 'severity_rate' | 'short_desc' | 'letter_no',
+    sortOrder: 'desc' as 'asc' | 'desc'
+  });
+
+  // Database configs
+  const [configs, setConfigs] = useState({
+    supabase: { url: settings?.supabase?.url || '', anonKey: settings?.supabase?.anonKey || '' },
+    deepseek: { apiKey: settings?.deepseek?.apiKey || '' },
+    openai: { apiKey: settings?.openai?.apiKey || '' }
+  });
+
+  // Hybrid search tuning
+  type Tuning = { vectorThreshold: number; vectorWeight: number; textWeight: number; textScoreMethod: 'overlap' | 'simple' };
+  const [tuning, setTuning] = useState<Tuning>({
+    vectorThreshold: settings?.vectorThreshold ?? 0.3,
+    vectorWeight: settings?.vectorWeight ?? 0.3,
+    textWeight: settings?.textWeight ?? 0.7,
+    textScoreMethod: settings?.textScoreMethod ?? 'overlap'
+  });
+
+  // Ayarlar değiştiğinde bunları uygulama
+  useEffect(() => {
+    if (settings && !settingsLoading) {
+      // Ayarları uygula
+      setEnableAI(settings.enableAI ?? false);
+      
+      // Configs ayarlarını güncelle
+      setConfigs({
+        supabase: { 
+          url: settings.supabase?.url || '', 
+          anonKey: settings.supabase?.anonKey || '' 
+        },
+        deepseek: { 
+          apiKey: settings.deepseek?.apiKey || '' 
+        },
+        openai: {
+          apiKey: settings.openai?.apiKey || ''
+        }
+      });
+      
+      // Tuning ayarlarını güncelle
+      setTuning({
+        vectorThreshold: settings.vectorThreshold ?? 0.3,
+        vectorWeight: settings.vectorWeight ?? 0.3,
+        textWeight: settings.textWeight ?? 0.7,
+        textScoreMethod: settings.textScoreMethod ?? 'overlap'
+      });
+      
+      // Ayarlar değiştiğinde servisleri yeniden yapılandır
+      if (settings.supabase?.url && settings.supabase?.anonKey) {
+        configureServices({
+          supabase: {
+            url: settings.supabase.url,
+            anonKey: settings.supabase.anonKey
+          },
+          deepseek: {
+            apiKey: settings.deepseek?.apiKey || ''
+          },
+          openai: {
+            apiKey: settings.openai?.apiKey || ''
+          }
+        });
+        
+        // Bağlantıları test et
+        setTimeout(() => {
+          testConnections();
+        }, 1000);
+      }
+    }
+  }, [settings, settingsLoading]);
+
+  // enableAI değiştiğinde ayarları güncelle
+  useEffect(() => {
+    if (settings) {
+      saveUserSettings({
+        ...settings,
+        enableAI
+      });
+    }
+  }, [enableAI]);
+  
+  // window.__APP_CONFIG__ değerlerini yükle (ilk yüklemede)
+  useEffect(() => {
+    const loadAppConfig = () => {
+      const appConfig = (window as any).__APP_CONFIG__;
+      if (appConfig) {
+        const appConfigs = {
+          supabase: { 
+            url: appConfig.SUPABASE_URL || '', 
+            anonKey: appConfig.SUPABASE_ANON_KEY || '' 
+          },
+          deepseek: { 
+            apiKey: appConfig.DEEPSEEK_API_KEY || '' 
+          },
+          openai: {
+            apiKey: appConfig.OPENAI_API_KEY || ''
+          }
+        };
+        
+        // Ayarlar henüz yüklenmemişse veya boşsa varsayılanları kullan
+        if (!settings || (!settings.supabase?.url && !settings.supabase?.anonKey)) {
+          setConfigs(appConfigs);
+        }
+      }
+    };
+
+    // Load immediately if available, or wait for window load
+    if ((window as any).__APP_CONFIG__) {
+      loadAppConfig();
+    } else {
+      window.addEventListener('load', loadAppConfig);
+      return () => window.removeEventListener('load', loadAppConfig);
+    }
+  }, []);
+    try {
+      // Prefer a single JSON blob when present (more robust across versions)
+      const json = localStorage.getItem(STORAGE_KEYS.CONFIGS_JSON);
+      if (json) {
+        try {
+          const parsed = JSON.parse(json);
+          console.log('� Credentials (json) localStorage\'dan yüklendi');
+          return parsed;
+        } catch (e) {
+          console.warn('⚠️ CONFIGS_JSON parse hatası, fallback ile devam ediliyor', e);
+          // fall through to legacy keys
+        }
+      }
+      console.log('�🔍 localStorage kontrol ediliyor...');
+      const storedConfigs = {
+        supabase: {
+          url: localStorage.getItem(STORAGE_KEYS.SUPABASE_URL) || '',
+          anonKey: localStorage.getItem(STORAGE_KEYS.SUPABASE_KEY) || ''
+        },
+        deepseek: {
+          apiKey: localStorage.getItem(STORAGE_KEYS.DEEPSEEK_KEY) || ''
+        },
+        openai: {
+          apiKey: localStorage.getItem(STORAGE_KEYS.OPENAI_KEY) || ''
+        }
+      };
+      
+      console.log('📋 localStorage değerleri:', {
+        supabaseUrl: !!storedConfigs.supabase.url,
+        supabaseKey: !!storedConfigs.supabase.anonKey,
+        deepseekKey: !!storedConfigs.deepseek.apiKey,
+        openaiKey: !!storedConfigs.openai.apiKey
+      });
+      
+      // Eğer localStorage'da en az bir değer varsa kullan
+      const hasStoredValues = storedConfigs.supabase.url || 
+                            storedConfigs.supabase.anonKey || 
+                            storedConfigs.deepseek.apiKey || 
+                            storedConfigs.openai.apiKey;
+      
+      if (hasStoredValues) {
+  console.log('📦 Credentials localStorage\'dan yüklendi (legacy keys)');
+  return storedConfigs;
+      } else {
+        console.log('❌ localStorage\'da credential bulunamadı');
+      }
+    } catch (error) {
+      console.warn('localStorage okuma hatası:', error);
+    }
+    return null;
+  };
+
+  // localStorage'a config kaydetme
+  const saveConfigsToStorage = (configsToSave: typeof configs) => {
+    try {
+      // Persist the whole configs object as JSON for robustness
+      try {
+        localStorage.setItem(STORAGE_KEYS.CONFIGS_JSON, JSON.stringify(configsToSave));
+      } catch (e) {
+        console.warn('CONFIGS_JSON kaydetme hatası, devam ediliyor', e);
+      }
+      if (configsToSave.supabase.url) {
+        localStorage.setItem(STORAGE_KEYS.SUPABASE_URL, configsToSave.supabase.url);
+      }
+      if (configsToSave.supabase.anonKey) {
+        localStorage.setItem(STORAGE_KEYS.SUPABASE_KEY, configsToSave.supabase.anonKey);
+      }
+      if (configsToSave.deepseek.apiKey) {
+        localStorage.setItem(STORAGE_KEYS.DEEPSEEK_KEY, configsToSave.deepseek.apiKey);
+      }
+      if (configsToSave.openai.apiKey) {
+        localStorage.setItem(STORAGE_KEYS.OPENAI_KEY, configsToSave.openai.apiKey);
+      }
+      console.log('💾 Credentials localStorage\'a kaydedildi');
+    } catch (error) {
+      console.warn('localStorage yazma hatası:', error);
+    }
+  };
+
+  // Load and apply configs (reusable) - used on mount and on login
+  const loadAndApplyConfigs = () => {
+    const storedConfigs = loadConfigsFromStorage();
+
+    const appConfig = (window as any).__APP_CONFIG__;
+    let appConfigs = null;
+    if (appConfig) {
+      appConfigs = {
+        supabase: { 
+          url: appConfig.SUPABASE_URL || '', 
+          anonKey: appConfig.SUPABASE_ANON_KEY || '' 
+        },
+        deepseek: { 
+          apiKey: appConfig.DEEPSEEK_API_KEY || '' 
+        },
+        openai: {
+          apiKey: appConfig.OPENAI_API_KEY || ''
+        }
+      };
+    }
+
+    const finalConfigs = {
+      supabase: {
+        url: storedConfigs?.supabase.url || appConfigs?.supabase.url || '',
+        anonKey: storedConfigs?.supabase.anonKey || appConfigs?.supabase.anonKey || ''
+      },
+      deepseek: {
+        apiKey: storedConfigs?.deepseek.apiKey || appConfigs?.deepseek.apiKey || ''
+      },
+      openai: {
+        apiKey: storedConfigs?.openai.apiKey || appConfigs?.openai.apiKey || ''
+      }
+    };
+
+    console.log('🔧 Configs yüklendi (loadAndApplyConfigs):', {
+      supabase: !!finalConfigs.supabase.url,
+      deepseek: !!finalConfigs.deepseek.apiKey,
+      openai: !!finalConfigs.openai.apiKey,
+      source: storedConfigs ? 'localStorage + appConfig' : 'appConfig'
+    });
+
+    setConfigs(finalConfigs);
+
+    // Auto-configure services if we have the data
+    if (finalConfigs.supabase.url && finalConfigs.supabase.anonKey) {
+      configureServices(finalConfigs);
+      // Test connections automatically
+      setTimeout(() => {
+        testConnections();
+      }, 1000);
+    }
+  };
+
+  // Config değişikliklerini otomatik kaydet
+  useEffect(() => {
+    // İlk yüklemede kaydetmesin diye boş config kontrolü
+    if (configs.supabase.url || configs.supabase.anonKey || 
+        configs.deepseek.apiKey || configs.openai.apiKey) {
+      saveConfigsToStorage(configs);
+    }
+  }, [configs]);
+
+  // Auto-load configs from localStorage and window.__APP_CONFIG__ (priority order)
+  useEffect(() => {
+    const loadConfigs = () => {
+      // 1. Önce localStorage'dan yükle
+      const storedConfigs = loadConfigsFromStorage();
+      
+      // 2. Sonra window.__APP_CONFIG__'den yükle
+      const appConfig = (window as any).__APP_CONFIG__;
+      let appConfigs = null;
+      if (appConfig) {
+        appConfigs = {
+          supabase: { 
+            url: appConfig.SUPABASE_URL || '', 
+            anonKey: appConfig.SUPABASE_ANON_KEY || '' 
+          },
+          deepseek: { 
+            apiKey: appConfig.DEEPSEEK_API_KEY || '' 
+          },
+          openai: {
+            apiKey: appConfig.OPENAI_API_KEY || ''
+          }
+        };
+      }
+
+      // 3. Öncelik sırası: localStorage > appConfig > varsayılan
+      const finalConfigs = {
+        supabase: {
+          url: storedConfigs?.supabase.url || appConfigs?.supabase.url || '',
+          anonKey: storedConfigs?.supabase.anonKey || appConfigs?.supabase.anonKey || ''
+        },
+        deepseek: {
+          apiKey: storedConfigs?.deepseek.apiKey || appConfigs?.deepseek.apiKey || ''
+        },
+        openai: {
+          apiKey: storedConfigs?.openai.apiKey || appConfigs?.openai.apiKey || ''
+        }
+      };
+
+      // Always load configs (localStorage has priority over appConfig)
+      console.log('🔧 Configs yüklendi:', {
+        supabase: !!finalConfigs.supabase.url,
+        deepseek: !!finalConfigs.deepseek.apiKey,
+        openai: !!finalConfigs.openai.apiKey,
+        source: storedConfigs ? 'localStorage + appConfig' : 'appConfig'
+      });
+      
+      setConfigs(finalConfigs);
+      
+      // Auto-configure services if we have the data
+      if (finalConfigs.supabase.url && finalConfigs.supabase.anonKey) {
+        configureServices(finalConfigs);
+        // Test connections automatically
+        setTimeout(() => {
+          testConnections();
+        }, 1000);
+      }
+    };
+
+    // Load immediately if available, or wait for window load (only once)
+    if ((window as any).__APP_CONFIG__) {
+      loadConfigs();
+    } else {
+      window.addEventListener('load', loadConfigs);
+      return () => window.removeEventListener('load', loadConfigs);
+    }
+  }, []); // Empty dependency array - run only once
+
+  // Ensure configs are loaded and applied on mount
+  useEffect(() => {
+    loadAndApplyConfigs();
+  }, []);
+
+  // Also re-load and apply configs when user logs in
+  const { user } = useAuth();
+  useEffect(() => {
+    if (user) {
+      console.log('Kullanıcı oturum açtı, kaydedilmiş config yükleniyor');
+      loadAndApplyConfigs();
+    }
+  }, [user]);
+
+  // Connection status icon
+  const getConnectionIcon = (status: string) => {
+    switch (status) {
+      case 'connected': return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'testing': return <RefreshCw className="h-4 w-4 text-yellow-500 animate-spin" />;
+      case 'error': return <XCircle className="h-4 w-4 text-red-500" />;
+      default: return <AlertCircle className="h-4 w-4 text-gray-400" />;
+    }
+  };
+
+  // Client-side filtering and sorting functions
+  const applyClientFilters = (results: any[]) => {
+    let filtered = [...results];
+    
+    // Apply filters
+    if (clientFilters.importantOnly) {
+      filtered = filtered.filter(result => result.severity_rate >= 8 || result.similarity >= 0.8);
+    }
+    
+    if (clientFilters.last30Days) {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      filtered = filtered.filter(result => {
+        const resultDate = new Date(result.letter_date || result.created_at || 0);
+        return resultDate >= thirtyDaysAgo;
+      });
+    }
+    
+    if (clientFilters.highScore) {
+      filtered = filtered.filter(result => (result.similarity || 0) > 0.8);
+    }
+    
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aValue, bValue;
+      
+      switch (clientSort.field) {
+        case 'score':
+          aValue = a.similarity || 0;
+          bValue = b.similarity || 0;
+          break;
+        case 'date':
+          aValue = new Date(a.letter_date || a.created_at || 0);
+          bValue = new Date(b.letter_date || b.created_at || 0);
+          break;
+        case 'severity':
+          aValue = a.severity_rate || 0;
+          bValue = b.severity_rate || 0;
+          break;
+        default:
+          return 0;
+      }
+      
+      if (clientSort.direction === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+    
+    return filtered;
+  };
+
+  // Toggle filter functions
+  const toggleFilter = (filterName: keyof typeof clientFilters) => {
+    console.log('🔄 toggleFilter called:', filterName);
+    console.log('📊 Current state:', clientFilters);
+    setClientFilters(prev => {
+      const newState = {
+        ...prev,
+        [filterName]: !prev[filterName]
+      };
+      console.log('✨ New state:', newState);
+      return newState;
+    });
+  };
+
+  // Change sort function
+  const changeSort = (field: string, direction: 'asc' | 'desc') => {
+    setClientSort({ field, direction });
+  };
+
+  // Handle search
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    
+    console.log('🔍 Arama başlatılıyor...');
+    console.log('Sorgu:', searchQuery);
+    console.log('AI Destekli:', enableAI);
+    console.log('Bağlantı durumları:', connectionState);
+    console.log('Configs:', configs);
+    
+    const searchFilters = {
+      ...(filters.dateFrom && { dateFrom: filters.dateFrom }),
+      ...(filters.dateTo && { dateTo: filters.dateTo }),
+      ...(filters.type_of_corr && { type_of_corr: filters.type_of_corr }),
+      ...(filters.severity_rate && { severity_rate: filters.severity_rate }),
+      ...(filters.inc_out && { inc_out: filters.inc_out }),
+      ...(filters.keywords?.length && { keywords: filters.keywords }),
+      ...(filters.internal_no && { internal_no: filters.internal_no })
+    };
+    
+    try {
+      await search(searchQuery, searchFilters, enableAI);
+    } catch (error) {
+      console.error('Arama hatası:', error);
+    }
+  };
+
+
+  // Handle config save
+  const handleConfigSave = async () => {
+    try {
+      // Yeni ayarları oluştur
+      const newSettings: UserSettings = {
+        supabase: configs.supabase,
+        deepseek: configs.deepseek,
+        openai: configs.openai,
+        enableAI,
+        vectorThreshold: tuning.vectorThreshold,
+        vectorWeight: tuning.vectorWeight,
+        textWeight: tuning.textWeight,
+        textScoreMethod: tuning.textScoreMethod
+      };
+
+      // Ayarları kaydet (hem Supabase'e hem localStorage'a)
+      await saveUserSettings(newSettings);
+      
+      // Servisleri konfigüre et
+      configureServices(configs);
+      await testConnections();
+      setShowSettings(false);
+      
+      console.log('💾 Ayarlar kaydedildi ve test edildi');
+    } catch (error) {
+      console.error('Ayarlar kaydedilemedi:', error);
+    }
+  };
+
+  // Format date
+  const formatDate = (dateString?: string): string => {
+    if (!dateString) return 'Tarih belirtilmemiş';
+    return new Date(dateString).toLocaleDateString('tr-TR', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  // Get document title (short_desc veya letter_no)
+  const getDocumentTitle = (doc: any): string => {
+    return doc.short_desc || doc.letter_no || doc.internal_no || `Belge #${doc.id}`;
+  };
+
+  // Get document subtitle
+  const getDocumentSubtitle = (doc: any): string => {
+    const parts = [];
+    if (doc.letter_no) parts.push(`Mektup No: ${doc.letter_no}`);
+    if (doc.internal_no) parts.push(`Dahili No: ${doc.internal_no}`);
+    return parts.join(' • ') || 'Detay bilgisi yok';
+  };
+
+  // Calculate filtered results for display counts
+  const filteredResults = applyClientFilters(supabaseResults);
+  const actualResultCount = filteredResults.length;
+
+  return (
+    <div className="container mx-auto p-6 space-y-6">
+      
+      {/* Debug Panel - Sadece geliştirme için */}
+      {SHOW_DEBUG_PANEL && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm text-blue-800">🔧 Debug Bilgileri</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-xs text-blue-700">
+            <div><strong>App Config:</strong> {(window as any).__APP_CONFIG__ ? 'Yüklendi' : 'Yüklenemedi'}</div>
+            <div><strong>Supabase URL:</strong> {configs.supabase.url || 'Boş'}</div>
+            <div><strong>Supabase Key:</strong> {configs.supabase.anonKey ? `${configs.supabase.anonKey.substring(0, 20)}...` : 'Boş'}</div>
+            <div><strong>DeepSeek Key:</strong> {configs.deepseek.apiKey || 'Boş'}</div>
+            <div><strong>OpenAI Key:</strong> {configs.openai.apiKey || 'Boş'}</div>
+            <div><strong>Bağlantı Durumları:</strong> Supabase: {connectionState.supabase}, DeepSeek: {connectionState.deepseek}, OpenAI: {connectionState.openai}</div>
+            <div><strong>Toplam Doküman:</strong> {stats.totalDocuments}</div>
+            <div><strong>Son Sorgu:</strong> {lastQuery || 'Henüz arama yapılmadı'}</div>
+            <div><strong>Sonuç Sayısı:</strong> Supabase: {supabaseResults.length}</div>
+            {error && <div className="text-red-600"><strong>Hata:</strong> {error}</div>}
+          </CardContent>
+        </Card>
+      )}
+      
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">🔍 Belge Arama Sistemi</h1>
+          <p className="text-gray-600 mt-1">
+            AI destekli akıllı belge arama - Supabase Vector Search
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          {/* User Status */}
+          {user && (
+            <div className="flex items-center gap-2 text-sm bg-green-50 px-3 py-1 rounded-lg">
+              <User className="h-4 w-4 text-green-600" />
+              <span className="text-green-800">{user.email}</span>
+              <CloudSync className="h-3 w-3 text-green-600" />
+            </div>
+          )}
+          
+          {!user && (
+            <div className="flex items-center gap-2 text-sm bg-yellow-50 px-3 py-1 rounded-lg">
+              <AlertCircle className="h-4 w-4 text-yellow-600" />
+              <span className="text-yellow-800">Yerel mod</span>
+            </div>
+          )}
+          
+          {/* Connection Status */}
+          <div className="flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-1">
+              {getConnectionIcon(connectionState.supabase)}
+              <span className="text-xs">Supabase</span>
+            </div>
+            <div className="flex items-center gap-1">
+              {getConnectionIcon(connectionState.deepseek)}
+              <span className="text-xs">DeepSeek</span>
+            </div>
+            <div className="flex items-center gap-1">
+              {getConnectionIcon(connectionState.openai)}
+              <span className="text-xs">OpenAI</span>
+            </div>
+          </div>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowSettings(true)}
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Ayarlar
+          </Button>
+        </div>
+      </div>
+
+      {/* Search Bar */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <Input
+                placeholder="Arama sorgunuzu yazın... (örn: 'sözleşme belgelerine benzer dokümanlar')"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                className="text-lg h-12"
+              />
+            </div>
+            
+            {/* AI Toggle */}
+            <div className="flex items-center space-x-2 bg-gray-50 px-4 rounded-lg">
+              <Checkbox
+                id="enable-ai"
+                checked={enableAI}
+                onCheckedChange={(checked) => {
+                  setEnableAI(checked === true);
+                }}
+              />
+              <Label 
+                htmlFor="enable-ai" 
+                className="text-sm font-medium cursor-pointer flex items-center gap-1"
+              >
+                <Brain className="h-4 w-4" />
+                {enableAI ? 'AI Vector Search' : 'Basit Arama'}
+              </Label>
+            </div>
+            
+            <Button
+              onClick={handleSearch}
+              disabled={isLoading || !searchQuery.trim() || !isAnyDatabaseConnected}
+              className="h-12 px-8"
+            >
+              {isLoading ? (
+                <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
+              ) : (
+                <Search className="h-5 w-5 mr-2" />
+              )}
+              Ara
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+              className="h-12"
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Filtreler
+            </Button>
+          </div>
+
+          {/* Filters Panel */}
+          {showFilters && (
+            <div className="mt-6 p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border shadow-sm space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Filter className="h-5 w-5 text-blue-600" />
+                  Gelişmiş Filtreler ve Sıralama
+                </h3>
+                <Badge variant="outline" className="text-xs">
+                  {Object.values(filters).filter(v => v && (Array.isArray(v) ? v.length > 0 : true)).length - 2} aktif filtre
+                </Badge>
+              </div>
+              
+              <Accordion type="multiple" defaultValue={["basic-filters", "sorting"]} className="space-y-4">
+                {/* Basic Filters */}
+                <AccordionItem value="basic-filters" className="border rounded-lg bg-white">
+                  <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-blue-600" />
+                      <span className="font-medium">Temel Filtreler</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {/* Date Range */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-gray-700">Mektup Tarihi Aralığı</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="date"
+                            value={filters.dateFrom}
+                            onChange={(e) => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
+                            placeholder="Başlangıç"
+                            className="text-sm"
+                          />
+                          <Input
+                            type="date"
+                            value={filters.dateTo}
+                            onChange={(e) => setFilters(prev => ({ ...prev, dateTo: e.target.value }))}
+                            placeholder="Bitiş"
+                            className="text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Correspondence Type */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-gray-700">Yazışma Türü</Label>
+                        <Select value={filters.type_of_corr} onValueChange={(value) => setFilters(prev => ({ ...prev, type_of_corr: value }))}>
+                          <SelectTrigger className="text-sm">
+                            <SelectValue placeholder="Yazışma türü seçin" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">Tümü</SelectItem>
+                            {availableOptions.correspondenceTypes.map(type => (
+                              <SelectItem key={type} value={type}>{type}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Severity Rate */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-gray-700">Önem Derecesi</Label>
+                        <Select value={filters.severity_rate} onValueChange={(value) => setFilters(prev => ({ ...prev, severity_rate: value }))}>
+                          <SelectTrigger className="text-sm">
+                            <SelectValue placeholder="Önem derecesi seçin" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">Tümü</SelectItem>
+                            {availableOptions.severityRates.map(rate => (
+                              <SelectItem key={rate} value={rate}>{rate}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Incoming/Outgoing */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-gray-700">Gelen/Giden</Label>
+                        <Select value={filters.inc_out} onValueChange={(value) => setFilters(prev => ({ ...prev, inc_out: value }))}>
+                          <SelectTrigger className="text-sm">
+                            <SelectValue placeholder="Gelen/Giden seçin" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">Tümü</SelectItem>
+                            <SelectItem value="Gelen">Gelen</SelectItem>
+                            <SelectItem value="Giden">Giden</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Internal Number */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-gray-700">Dahili Numara</Label>
+                        <Input
+                          value={filters.internal_no}
+                          onChange={(e) => setFilters(prev => ({ ...prev, internal_no: e.target.value }))}
+                          placeholder="Dahili numara girin"
+                          className="text-sm"
+                        />
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* Keywords */}
+                {availableOptions.keywords.length > 0 && (
+                  <AccordionItem value="keywords" className="border rounded-lg bg-white">
+                    <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                      <div className="flex items-center gap-2">
+                        <Tag className="h-4 w-4 text-green-600" />
+                        <span className="font-medium">Anahtar Kelimeler</span>
+                        {filters.keywords.length > 0 && (
+                          <Badge variant="secondary" className="ml-2 text-xs">
+                            {filters.keywords.length} seçili
+                          </Badge>
+                        )}
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-4">
+                      <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+                        {availableOptions.keywords.slice(0, 30).map(keyword => (
+                          <div key={keyword} className="flex items-center space-x-2 bg-gray-50 px-3 py-1 rounded-full">
+                            <Checkbox
+                              id={keyword}
+                              checked={filters.keywords.includes(keyword)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setFilters(prev => ({ ...prev, keywords: [...prev.keywords, keyword] }));
+                                } else {
+                                  setFilters(prev => ({ ...prev, keywords: prev.keywords.filter(k => k !== keyword) }));
+                                }
+                              }}
+                            />
+                            <Label htmlFor={keyword} className="text-sm cursor-pointer">{keyword}</Label>
+                          </div>
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+
+                {/* Sorting */}
+                <AccordionItem value="sorting" className="border rounded-lg bg-white">
+                  <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-purple-600" />
+                      <span className="font-medium">Sıralama Kriterleri</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                          <BarChart3 className="h-4 w-4" />
+                          Sıralama Kriteri
+                        </Label>
+                        <Select value={filters.sortBy} onValueChange={(value: 'letter_date' | 'similarity' | 'severity_rate' | 'short_desc' | 'letter_no') => setFilters(prev => ({ ...prev, sortBy: value }))}>
+                          <SelectTrigger className="text-sm">
+                            <SelectValue placeholder="Sıralama kriteri seçin" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="letter_date">📅 Mektup Tarihi</SelectItem>
+                            <SelectItem value="similarity">🎯 Benzerlik Skoru</SelectItem>
+                            <SelectItem value="severity_rate">⚡ Önem Derecesi</SelectItem>
+                            <SelectItem value="short_desc">📝 Alfabetik (Açıklama)</SelectItem>
+                            <SelectItem value="letter_no">🔢 Mektup No</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                          <TrendingUp className="h-4 w-4" />
+                          Sıralama Yönü
+                        </Label>
+                        <Select value={filters.sortOrder} onValueChange={(value: 'asc' | 'desc') => setFilters(prev => ({ ...prev, sortOrder: value }))}>
+                          <SelectTrigger className="text-sm">
+                            <SelectValue placeholder="Sıralama yönü seçin" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="desc">
+                              {filters.sortBy === 'letter_date' && '🔽 Yeni → Eski'}
+                              {filters.sortBy === 'similarity' && '🔽 Yüksek → Düşük'}
+                              {filters.sortBy === 'severity_rate' && '🔽 Yüksek → Düşük'}
+                              {(filters.sortBy === 'short_desc' || filters.sortBy === 'letter_no') && '🔽 Z → A'}
+                            </SelectItem>
+                            <SelectItem value="asc">
+                              {filters.sortBy === 'letter_date' && '🔼 Eski → Yeni'}
+                              {filters.sortBy === 'similarity' && '🔼 Düşük → Yüksek'}
+                              {filters.sortBy === 'severity_rate' && '🔼 Düşük → Yüksek'}
+                              {(filters.sortBy === 'short_desc' || filters.sortBy === 'letter_no') && '🔼 A → Z'}
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+
+              <div className="flex justify-between pt-4 border-t">
+                <Button variant="outline" onClick={() => setFilters({
+                  dateFrom: '', dateTo: '', type_of_corr: '', severity_rate: '', inc_out: '', keywords: [], internal_no: '',
+                  sortBy: 'letter_date', sortOrder: 'desc'
+                })} className="flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4" />
+                  Tümünü Temizle
+                </Button>
+                <Button onClick={handleSearch} disabled={isLoading || !searchQuery.trim()} className="flex items-center gap-2">
+                  <Search className="h-4 w-4" />
+                  Filtreli Arama Yap
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* AI Decision Display */}
+      {searchDecision && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Brain className="h-5 w-5 text-purple-600" />
+              AI Arama Stratejisi
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Badge variant={searchDecision.searchType === 'both' ? 'default' : 'secondary'}>
+                  {searchDecision.searchType === 'supabase' && '�️ Supabase'}
+                  {searchDecision.searchType === 'neo4j' && '🧠 Neo4j Graph'}
+                  {searchDecision.searchType === 'both' && '🔄 Her İki Sistem'}
+                </Badge>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Güven Skoru:</span>
+                  <Progress value={searchDecision.confidence * 100} className="w-20 h-2" />
+                  <span className="text-sm font-medium">{Math.round(searchDecision.confidence * 100)}%</span>
+                </div>
+              </div>
+              <p className="text-sm text-gray-700">{searchDecision.reasoning}</p>
+              {searchDecision.queryOptimization && (
+                <div className="text-xs text-gray-600">
+                  <strong>Optimize edilmiş sorgu:</strong> {searchDecision.queryOptimization.optimizedQuery}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Error Display */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Loading */}
+      {isLoading && (
+        <Card>
+          <CardContent className="flex items-center justify-center p-12">
+            <div className="flex items-center gap-3">
+              <RefreshCw className="h-6 w-6 animate-spin text-blue-600" />
+              <span className="text-lg text-gray-600">
+                {searchDecision ? 
+                  `${searchDecision.searchType === 'both' ? 'Her iki sistemde' : 
+                    searchDecision.searchType === 'neo4j' ? 'Neo4j Graph\'te' : 
+                    'Supabase\'de'} arama yapılıyor...` : 
+                  'AI arama stratejisi belirleniyor...'
+                }
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Results */}
+      {hasResults && (
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <div className="flex items-center justify-between">
+            <TabsList className="grid w-auto grid-cols-3">
+              <TabsTrigger value="search" className="flex items-center gap-2">
+                <Search className="h-4 w-4" />
+                Sonuçlar ({actualResultCount})
+              </TabsTrigger>
+              <TabsTrigger value="supabase" className="flex items-center gap-2">
+                <Database className="h-4 w-4" />
+                Vector Search ({actualResultCount})
+              </TabsTrigger>
+            </TabsList>
+
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Filter className="h-4 w-4 mr-2" />
+                    Filtreler
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-80">
+                  <div className="mt-2 p-3 bg-gray-50 rounded">
+                    <h4 className="font-medium mb-2">Hybrid Search Ayarları</h4>
+                    <div className="grid grid-cols-1 gap-3">
+                      <div>
+                        <Label>Vector Threshold: {tuning.vectorThreshold.toFixed(2)}</Label>
+                        <Input type="range" min="0" max="1" step="0.01" value={tuning.vectorThreshold}
+                          onChange={(e) => setTuning(prev => ({ ...prev, vectorThreshold: parseFloat(e.target.value) }))} />
+                      </div>
+                      <div>
+                        <Label>Vector Weight: {tuning.vectorWeight.toFixed(2)}</Label>
+                        <Input type="range" min="0" max="1" step="0.01" value={tuning.vectorWeight}
+                          onChange={(e) => setTuning(prev => ({ ...prev, vectorWeight: parseFloat(e.target.value) }))} />
+                      </div>
+                      <div>
+                        <Label>Text Weight: {tuning.textWeight.toFixed(2)}</Label>
+                        <Input type="range" min="0" max="1" step="0.01" value={tuning.textWeight}
+                          onChange={(e) => setTuning(prev => ({ ...prev, textWeight: parseFloat(e.target.value) }))} />
+                      </div>
+                      <div>
+                        <Label>Text Scoring Method</Label>
+                        <Select value={tuning.textScoreMethod} onValueChange={(value) => setTuning(prev => ({ ...prev, textScoreMethod: value }))}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="overlap">Token Overlap</SelectItem>
+                            <SelectItem value="simple">Fixed Score (legacy)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <DropdownMenuLabel className="mt-3">Filtrele</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <div 
+                    className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                    onClick={() => toggleFilter('importantOnly')}
+                  >
+                    <input 
+                      type="checkbox" 
+                      className="mr-2 pointer-events-none" 
+                      checked={clientFilters.importantOnly}
+                      readOnly
+                    />
+                    Yalnızca önemli sonuçlar
+                  </div>
+                  <div 
+                    className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                    onClick={() => toggleFilter('last30Days')}
+                  >
+                    <input 
+                      type="checkbox" 
+                      className="mr-2 pointer-events-none" 
+                      checked={clientFilters.last30Days}
+                      readOnly
+                    />
+                    Son 30 gün
+                  </div>
+                  <div 
+                    className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                    onClick={() => toggleFilter('highScore')}
+                  >
+                    <input 
+                      type="checkbox" 
+                      className="mr-2 pointer-events-none" 
+                      checked={clientFilters.highScore}
+                      readOnly
+                    />
+                    Yüksek skor (&gt;0.8)
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <ArrowUpDown className="h-4 w-4 mr-2" />
+                    Sırala
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56">
+                  <DropdownMenuLabel>Sıralama</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => changeSort('score', 'desc')}>
+                    <ArrowUp className="h-4 w-4 mr-2" />
+                    Skor (Yüksek → Düşük)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => changeSort('score', 'asc')}>
+                    <ArrowDown className="h-4 w-4 mr-2" />
+                    Skor (Düşük → Yüksek)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => changeSort('date', 'desc')}>
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Tarih (Yeni → Eski)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => changeSort('date', 'asc')}>
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Tarih (Eski → Yeni)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              <Button variant="outline" size="sm" onClick={clearResults}>
+                Temizle
+              </Button>
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Dışa Aktar
+              </Button>
+            </div>
+          </div>
+
+          {/* Combined Results */}
+          <TabsContent value="search" className="space-y-4">
+            {/* Search Information */}
+            {lastQuery && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="h-5 w-5 text-blue-600" />
+                    Arama Bilgileri
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <h4 className="font-medium mb-2">Arama Detayları</h4>
+                      <div className="space-y-1 text-sm">
+                        <div><strong>Sorgu:</strong> {lastQuery}</div>
+                        <div><strong>Yöntem:</strong> 
+                          <Badge variant="outline" className="ml-2">
+                            {searchMethod === 'vector' ? '🧠 Vector Search' : 
+                             searchMethod === 'hybrid' ? '🔀 Hybrid Search' : '📝 Text Search'}
+                          </Badge>
+                        </div>
+                        {queryEnhancement && (
+                          <>
+                            <div><strong>Geliştirilmiş Sorgu:</strong> {queryEnhancement.enhancedQuery}</div>
+                            <div><strong>Dil:</strong> {queryEnhancement.language === 'turkish' ? '🇹🇷 Türkçe' : '🇺🇸 İngilizce'}</div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-medium mb-2">Arama Stratejisi</h4>
+                      <div className="space-y-1 text-sm">
+                        {queryEnhancement?.searchKeywords && queryEnhancement.searchKeywords.length > 0 && (
+                          <div><strong>Anahtar Kelimeler:</strong> {queryEnhancement.searchKeywords.join(', ')}</div>
+                        )}
+                        {queryEnhancement?.searchStrategy && (
+                          <div><strong>Arama Stratejisi:</strong> {queryEnhancement.searchStrategy}</div>
+                        )}
+                        <div><strong>Toplam Sonuç:</strong> {totalResults}</div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {aiAnalysis && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-green-600" />
+                    AI Analiz Sonuçları
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <h4 className="font-medium mb-2">Alakalılık Skorları</h4>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm">Supabase Vector:</span>
+                          <div className="flex items-center gap-2">
+                            <Progress value={aiAnalysis.relevanceScores.supabase * 100} className="w-20 h-2" />
+                            <span className="text-sm font-medium">{Math.round(aiAnalysis.relevanceScores.supabase * 100)}%</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-medium mb-2">AI Önerileri</h4>
+                      <ul className="text-sm text-gray-600 space-y-1">
+                        {aiAnalysis.recommendations.map((rec, index) => (
+                          <li key={index} className="flex items-start gap-2">
+                            <span className="text-blue-500">•</span>
+                            <span>{rec}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Combined Results List */}
+            <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+              {/* Supabase Results */}
+              {filteredResults.map((result, index) => (
+                <Card key={`supabase-${index}`}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-lg">{getDocumentTitle(result)}</CardTitle>
+                        <CardDescription className="mt-1">{getDocumentSubtitle(result)}</CardDescription>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge variant="outline" className="text-green-600">
+                            <Database className="h-3 w-3 mr-1" />
+                            Database
+                          </Badge>
+                          {result.similarity && (
+                            <Badge variant={result.similarity > 0.9 ? 'default' : result.similarity > 0.7 ? 'secondary' : 'outline'}>
+                              🎯 {(result.similarity * 100).toFixed(1)}%
+                            </Badge>
+                          )}
+                          {result.searchType && (
+                            <Badge variant="outline" className={
+                              result.searchType === 'vector' ? 'text-purple-600' : 
+                              result.searchType === 'hybrid' ? 'text-blue-600' : 'text-gray-600'
+                            }>
+                              {result.searchType === 'vector' ? '🧠 Vector' : 
+                               result.searchType === 'hybrid' ? '🔀 Hybrid' : '📝 Text'}
+                            </Badge>
+                          )}
+                          {result.type_of_corr && <Badge>{result.type_of_corr}</Badge>}
+                          {result.severity_rate && (
+                            <Badge variant={
+                              result.severity_rate.toLowerCase().includes('yüksek') ? 'destructive' : 
+                              result.severity_rate.toLowerCase().includes('orta') ? 'default' : 'secondary'
+                            }>
+                              {result.severity_rate}
+                            </Badge>
+                          )}
+                          {result["inc-out"] && (
+                            <Badge variant="secondary">
+                              {result["inc-out"] === 'Gelen' ? '📨 Gelen' : '📤 Giden'}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right text-sm text-gray-500">
+                        <div>{formatDate(result.letter_date)}</div>
+                        {result.sp_id && <div className="text-xs">SP: {result.sp_id}</div>}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {result.content && (
+                      <p className="text-gray-700 mb-3 line-clamp-3">
+                        {result.content.length > 200 ? 
+                          `${result.content.substring(0, 200)}...` : 
+                          result.content
+                        }
+                      </p>
+                    )}
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-gray-600 mb-3">
+                      {result.ref_letters && (
+                        <div>
+                          <span className="font-medium">Ref. Mektuplar:</span>
+                          <div className="truncate">{result.ref_letters}</div>
+                        </div>
+                      )}
+                      {result.reply_letter && (
+                        <div>
+                          <span className="font-medium">Cevap:</span>
+                          <div className="truncate">{result.reply_letter}</div>
+                        </div>
+                      )}
+                      {result.weburl && (
+                        <div>
+                          <span className="font-medium">Web URL:</span>
+                          <a href={result.weburl} target="_blank" rel="noopener noreferrer" 
+                             className="text-blue-600 hover:underline truncate block">
+                            Bağlantı
+                          </a>
+                        </div>
+                      )}
+                      {result.metadata && Object.keys(result.metadata).length > 0 && (
+                        <div>
+                          <span className="font-medium">Metadata:</span>
+                          <div className="text-xs">{Object.keys(result.metadata).length} alan</div>
+                        </div>
+                      )}
+                    </div>
+
+                    {result.keywords && (
+                      <div className="flex flex-wrap gap-1">
+                        {result.keywords.split(',').slice(0, 5).map((keyword: string, i: number) => (
+                          <Badge key={i} variant="outline" className="text-xs">
+                            <Tag className="h-3 w-3 mr-1" />
+                            {keyword.trim()}
+                          </Badge>
+                        ))}
+                        {result.keywords.split(',').length > 5 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{result.keywords.split(',').length - 5} daha
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          {/* Supabase Tab */}
+          <TabsContent value="supabase" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Database className="h-5 w-5" />
+                  Supabase Database Sonuçları
+                </CardTitle>
+                <CardDescription>
+                  Yazışma kayıtları ve belge verileri
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {supabaseResults.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    Supabase'de sonuç bulunamadı
+                  </div>
+                ) : (
+                  <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+                    {filteredResults.map((result, index) => (
+                      <div key={index} className="border rounded-lg p-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <h3 className="font-medium text-lg">{getDocumentTitle(result)}</h3>
+                            <p className="text-sm text-gray-600 mt-1">{getDocumentSubtitle(result)}</p>
+                          </div>
+                          <div className="text-right text-sm text-gray-500">
+                            <div>{formatDate(result.letter_date)}</div>
+                            <div className="text-xs">ID: {result.id}</div>
+                          </div>
+                        </div>
+
+                        {result.content && (
+                          <div className="mb-3">
+                            <h4 className="text-sm font-medium text-gray-700 mb-1">İçerik:</h4>
+                            <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded max-h-20 overflow-y-auto">
+                              {result.content}
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                          <div>
+                            <span className="font-medium text-gray-700">Yazışma Türü:</span>
+                            <div className="text-gray-600">{result.type_of_corr || 'Belirtilmemiş'}</div>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-700">Önem:</span>
+                            <div className="text-gray-600">{result.severity_rate || 'Belirtilmemiş'}</div>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-700">Gelen/Giden:</span>
+                            <div className="text-gray-600">{result["inc-out"] || 'Belirtilmemiş'}</div>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-700">Dahili No:</span>
+                            <div className="text-gray-600">{result.internal_no || 'Yok'}</div>
+                          </div>
+                        </div>
+
+                        {(result.ref_letters || result.reply_letter || result.keywords) && (
+                          <div className="mt-3 pt-3 border-t border-gray-200">
+                            {result.ref_letters && (
+                              <div className="mb-2">
+                                <span className="text-xs font-medium text-gray-700">Referans Mektuplar: </span>
+                                <span className="text-xs text-gray-600">{result.ref_letters}</span>
+                              </div>
+                            )}
+                            {result.reply_letter && (
+                              <div className="mb-2">
+                                <span className="text-xs font-medium text-gray-700">Cevap Mektubu: </span>
+                                <span className="text-xs text-gray-600">{result.reply_letter}</span>
+                              </div>
+                            )}
+                            {result.keywords && (
+                              <div>
+                                <span className="text-xs font-medium text-gray-700">Anahtar Kelimeler: </span>
+                                <span className="text-xs text-gray-600">{result.keywords}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {result.weburl && (
+                          <div className="mt-3">
+                            <a href={result.weburl} target="_blank" rel="noopener noreferrer"
+                               className="text-xs text-blue-600 hover:underline">
+                              🔗 Web Bağlantısı
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      )}
+
+      {/* Stats Dashboard */}
+      {!hasResults && !isLoading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <FileText className="h-8 w-8 text-blue-600" />
+                <div>
+                  <div className="text-2xl font-bold">{stats.totalDocuments}</div>
+                  <div className="text-sm text-gray-600">Toplam Yazışma</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <Clock className="h-8 w-8 text-green-600" />
+                <div>
+                  <div className="text-2xl font-bold">{stats.recentDocuments}</div>
+                  <div className="text-sm text-gray-600">Bu Hafta</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <Folder className="h-8 w-8 text-purple-600" />
+                <div>
+                  <div className="text-2xl font-bold">{Object.keys(stats.correspondenceTypeCounts).length}</div>
+                  <div className="text-sm text-gray-600">Yazışma Türü</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <TrendingUp className="h-8 w-8 text-orange-600" />
+                <div>
+                  <div className="text-2xl font-bold">
+                    {(stats.incomingOutgoing['Gelen'] || 0) + (stats.incomingOutgoing['Giden'] || 0)}
+                  </div>
+                  <div className="text-sm text-gray-600">Gelen/Giden</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Settings Modal */}
+      <Dialog open={showSettings} onOpenChange={setShowSettings}>
+        <DialogContent className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Veritabanı Ayarları
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="text-sm text-gray-600">
+              Neo4j, Supabase, DeepSeek ve OpenAI API bağlantı bilgilerini girin
+            </div>
+              
+              {/* Supabase Config */}
+              <div className="space-y-3">
+                <h3 className="font-medium flex items-center gap-2">
+                  <Database className="h-4 w-4" />
+                  Supabase PostgreSQL
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <Input
+                    placeholder="https://your-project.supabase.co"
+                    value={configs.supabase.url}
+                    onChange={(e) => setConfigs(prev => ({
+                      ...prev,
+                      supabase: { ...prev.supabase, url: e.target.value }
+                    }))}
+                  />
+                  <Input
+                    type="password"
+                    placeholder="Anon Key"
+                    value={configs.supabase.anonKey}
+                    onChange={(e) => setConfigs(prev => ({
+                      ...prev,
+                      supabase: { ...prev.supabase, anonKey: e.target.value }
+                    }))}
+                  />
+                </div>
+              </div>
+
+              {/* DeepSeek Config */}
+              <div className="space-y-3">
+                <h3 className="font-medium flex items-center gap-2">
+                  <Brain className="h-4 w-4" />
+                  DeepSeek AI API
+                </h3>
+                <Input
+                  type="password"
+                  placeholder="sk-..."
+                  value={configs.deepseek.apiKey}
+                  onChange={(e) => setConfigs(prev => ({
+                    ...prev,
+                    deepseek: { ...prev.deepseek, apiKey: e.target.value }
+                  }))}
+                />
+              </div>
+
+              {/* OpenAI Config */}
+              <div className="space-y-3">
+                <h3 className="font-medium flex items-center gap-2">
+                  <Zap className="h-4 w-4" />
+                  OpenAI API (Vector Search)
+                </h3>
+                <Input
+                  type="password"
+                  placeholder="sk-..."
+                  value={configs.openai.apiKey}
+                  onChange={(e) => setConfigs(prev => ({
+                    ...prev,
+                    openai: { ...prev.openai, apiKey: e.target.value }
+                  }))}
+                />
+              </div>
+
+                <div className="flex justify-between">
+                  <div className="flex gap-3">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        const appConfig = (window as any).__APP_CONFIG__;
+                        if (appConfig) {
+                          const appConfigs = {
+                            supabase: { 
+                              url: appConfig.SUPABASE_URL || '', 
+                              anonKey: appConfig.SUPABASE_ANON_KEY || '' 
+                            },
+                            deepseek: { 
+                              apiKey: appConfig.DEEPSEEK_API_KEY || '' 
+                            },
+                            openai: {
+                              apiKey: appConfig.OPENAI_API_KEY || ''
+                            }
+                          };
+                          setConfigs(appConfigs);
+                        }
+                      }}
+                    >
+                      🔄 Varsayılan Değerleri Yükle
+                    </Button>
+                    
+                    <Button 
+                      variant="destructive" 
+                      onClick={async () => {
+                        try {
+                          // Boş ayarları kaydet (her iki sisteme de)
+                          const emptySettings: UserSettings = {
+                            supabase: { url: '', anonKey: '' },
+                            deepseek: { apiKey: '' },
+                            openai: { apiKey: '' },
+                            enableAI: false,
+                            vectorThreshold: 0.3,
+                            vectorWeight: 0.3,
+                            textWeight: 0.7,
+                            textScoreMethod: 'overlap'
+                          };
+                          
+                          await saveUserSettings(emptySettings);
+                          
+                          // Form'u temizle
+                          setConfigs(emptySettings);
+                          setEnableAI(false);
+                          setTuning({
+                            vectorThreshold: 0.3,
+                            vectorWeight: 0.3,
+                            textWeight: 0.7,
+                            textScoreMethod: 'overlap'
+                          });
+                          
+                          console.log('🗑️ Tüm ayarlar temizlendi');
+                        } catch (error) {
+                          console.error('Ayarlar temizlenemedi:', error);
+                        }
+                      }}
+                    >
+                      🗑️ Tümünü Temizle
+                    </Button>
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <Button variant="outline" onClick={() => setShowSettings(false)}>
+                      İptal
+                    </Button>
+                    <Button onClick={handleConfigSave}>
+                      <CloudSync className="h-4 w-4 mr-2" />
+                      {user ? 'Kaydet ve Senkronize Et' : 'Kaydet (Yerel)'}
+                    </Button>
+                  </div>
+                </div>
+            </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

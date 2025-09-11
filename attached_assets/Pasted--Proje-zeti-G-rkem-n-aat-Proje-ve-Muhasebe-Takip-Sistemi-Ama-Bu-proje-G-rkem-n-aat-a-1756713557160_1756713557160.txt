@@ -1,0 +1,168 @@
+🏗️ Proje Özeti: "Görkem İnşaat" Proje ve Muhasebe Takip Sistemi
+🎯 Amaç:
+
+Bu proje, Görkem İnşaat adlı aile şirketi için geliştirilmekte olan bir web uygulamasıdır. Uygulama sayesinde, şirketin:
+
+Devam eden inşaat projeleri
+
+Muhasebe kayıtları
+tamamen Google Sheets üzerinde saklanacak, ancak web tabanlı bir arayüz üzerinden erişilecek ve yönetilecektir.
+
+Uygulama Replit üzerinde geliştirilecek ve barındırılacaktır.
+
+🧱 Mimari Özeti:
+Katman	Teknoloji
+Frontend	HTML, CSS, JavaScript (veya React)
+Backend	Python (Flask veya FastAPI)
+Veritabanı	Google Sheets (Google Sheets API v4 üzerinden)
+Barındırma	Replit
+Kimlik Doğrulama	Google Service Account (JSON ile)
+
+✅ Gerekli Google API erişim bilgileri (örneğin hizmet hesabı JSON dosyası) tarafımdan sağlanacaktır.
+
+🔐 Google Sheets API Kullanımı:
+
+Uygulama, Google Sheets’i bir veritabanı gibi kullanacaktır. API ile şu işlemler yapılacak:
+
+Sayfaları (sheet tabs) listeleme
+
+Sheet içeriğini okuma/yazma/güncelleme/silme
+
+Sheet oluşturma ve yeniden adlandırma
+
+Satır/kolon ekleme ve silme
+
+Dashboard için özet veri çekimi
+
+🖥️ Web Arayüz Özellikleri:
+🧭 1. Sidebar (Sol Menü)
+
+Dinamik olarak, Google Sheet’teki tüm sayfaları (sheet tabs) listeler
+
+Kullanıcı:
+
+Sayfa seçip içeriklerini görür
+
+Yeni sayfa oluşturur
+
+Sayfa siler veya adını değiştirir
+
+📋 2. Sheet Veri Görünümü
+
+Seçilen sheet’in verileri tablo olarak ana panele yüklenir
+
+Hücreler düzenlenebilir (inline edit)
+
+Satır ekleme, silme, güncelleme yapılabilir
+
+Filtreleme ve arama desteği olacak
+
+➕ 3. Yeni Veri Girişi
+
+Form üzerinden veri giriş alanı
+
+Form alanları, sheet’in başlıklarına göre otomatik oluşturulur
+
+📊 4. Dashboard Görünümü
+
+Ana sayfada (rayzünde), özet tablolar ve metriklerin yer aldığı bir dashboard ekranı olacak.
+
+💰 Muhasebe Dashboard Örnekleri:
+
+Toplam Gelir (SUM)
+
+Toplam Gider
+
+Aylık Net Kâr (Gelir - Gider)
+
+Gider Dağılımı (kategori bazlı)
+
+Grafik: Aylık Gider-Gelir Bar Chart
+
+Pie Chart: Giderlerin kategoriye göre yüzdesi
+
+🏗️ Proje Dashboard Örnekleri:
+
+Aktif Proje Sayısı
+
+Bitmiş Proje Sayısı
+
+Proje Durum Durumu (% Tamamlanma)
+
+Proje Başına Harcama Toplamı
+
+Gantt benzeri basit aşama görünümü
+
+🔄 Dashboard verileri her sayfa geçişinde ya da belli aralıklarla Google Sheets üzerinden güncellenerek çekilir.
+
+📊 Örnek Muhasebe Sheet Yapısı:
+Tarih	Açıklama	Tutar	Tür	Kategori
+2025-08-01	Kaba inşaat gideri	45.000	Gider	İnşaat
+2025-08-03	Müşteri ödemesi	75.000	Gelir	Proje Satışı
+2025-08-04	Ofis kirası	15.000	Gider	Genel Gider
+
+Tür: “Gelir” veya “Gider”
+Dashboard bu tablo üzerinden finansal özet çıkarır.
+
+📊 Örnek Proje Sheet Yapısı:
+Proje Adı	Başlangıç	Bitiş	Durum	Harcama	Tamamlanma (%)
+Yalı Villaları	2025-06-01	2025-12-15	Devam Ediyor	320.000	45
+Güngören Konut	2025-05-01	2025-09-30	Tamamlandı	270.000	100
+
+Tamamlanma (%) bar veya progress gösterge olarak dashboardda gösterilebilir.
+
+🔧 Teknik Gereksinimler:
+
+gspread ve google-auth Python kütüphaneleri kullanılacak
+
+JSON kimlik dosyası yüklü olacak (creds.json)
+
+Google Sheets belgesi hizmet hesabıyla paylaşılacak
+
+Replit'te CORS, async işlemler ve JSON API endpoint’leri düzgün yönetilecek
+
+🧪 Geliştirici Notu:
+
+Arayüz tamamen responsive olmalı (mobil ve masaüstü uyumlu)
+
+Tüm işlemler sayfa yenilemeden gerçekleşmeli (AJAX/Fetch/React state)
+
+Dashboard bileşenleri için Chart.js veya benzeri JS kütüphaneleri kullanılabilir
+
+Kullanıcı dostu hata mesajları ve yükleniyor animasyonları eklenmeli
+
+🧠 Yapay Zekâ/Geliştirici Agent İçin Açıklama:
+
+Bu brief, bir yapay zekâ geliştirici aracının (örneğin Replit AI) uygulamayı parça parça oluşturabilmesi için yapılandırılmıştır.
+Uygulama, Google Sheets’i bir veritabanı gibi kullanır ve tüm veri işlemleri Replit’teki web arayüzden yapılır.
+
+✅ Sağlanan Bilgiler:
+
+Google API hizmet hesabı JSON dosyası
+
+Erişim izni verilmiş Google Sheets belgeleri
+
+Tabloların örnek yapısı ve amaçları
+
+📌 İlk Aksiyon Önerisi:
+
+Bu dokümana göre aşağıdaki gibi başlanabilir:
+
+creds.json dosyasını yükle
+
+Flask tabanlı temel backend oluştur
+
+Sheets API bağlantısı kur
+
+Sidebarda sheet listesini çek ve görüntüle
+
+Ana panele seçilen sheet verilerini göster
+
+Basit dashboard verisi oku ve sayısal özetleri göster
+
+Hazırsan, bu brief'e göre temel Replit kod altyapısını oluşturmaya başlayabiliriz.
+İlk olarak istersen:
+
+Flask backend + Google Sheets bağlantısı
+
+React tabanlı frontend + Sidebar + Dashboard mockup

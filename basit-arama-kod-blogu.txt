@@ -1,0 +1,191 @@
+/* ================================================
+   BASİT ARAMA (TEXT SEARCH) KOD BLOĞU
+   ================================================ */
+
+// 1. SUPABASE SERVİSİNDE BASİT ARAMA FONKSİYONU
+// Dosya: /workspaces/gorkem/client/src/services/supabase.ts
+
+async searchDocuments(
+  query: string, 
+  filters?: SearchFilters
+): Promise<DocumentRecord[]> {
+  try {
+    if (!this.client) {
+      throw new Error('Supabase istemcisi başlatılmamış');
+    }
+
+    let queryBuilder = this.client
+      .from('documents')
+      .select('*');
+
+    // Full-text search - basit arama (vector search zaten translation yapacak)
+    if (query.trim()) {
+      console.log(`🔍 Text search sorgusu: "${query}"`);
+      
+      queryBuilder = queryBuilder.or(
+        `content.ilike.%${query}%,` +
+        `short_desc.ilike.%${query}%,` +
+        `keywords.ilike.%${query}%,` +
+        `letter_no.ilike.%${query}%,` +
+        `internal_no.ilike.%${query}%,` +
+        `ref_letters.ilike.%${query}%`
+      );
+    }
+
+    // Filtreler uygulama
+    if (filters?.dateFrom) {
+      queryBuilder = queryBuilder.gte('letter_date', filters.dateFrom);
+    }
+
+    if (filters?.dateTo) {
+      queryBuilder = queryBuilder.lte('letter_date', filters.dateTo);
+    }
+
+    if (filters?.type_of_corr) {
+      queryBuilder = queryBuilder.eq('type_of_corr', filters.type_of_corr);
+    }
+
+    if (filters?.severity_rate) {
+      queryBuilder = queryBuilder.eq('severity_rate', filters.severity_rate);
+    }
+
+    if (filters?.inc_out) {
+      queryBuilder = queryBuilder.eq('inc-out', filters.inc_out);
+    }
+
+    if (filters?.internal_no) {
+      queryBuilder = queryBuilder.ilike('internal_no', `%${filters.internal_no}%`);
+    }
+
+    if (filters?.keywords && filters.keywords.length > 0) {
+      const keywordSearch = filters.keywords.map(keyword => 
+        `keywords.ilike.%${keyword}%`
+      ).join(',');
+      queryBuilder = queryBuilder.or(keywordSearch);
+    }
+
+    // Sonuçları sırala
+    const sortBy = filters?.sortBy || 'letter_date';
+    const sortOrder = filters?.sortOrder || 'desc';
+    
+    const { data, error } = await queryBuilder
+      .order(sortBy, { ascending: sortOrder === 'asc' })
+      .limit(DEFAULTS.TEXT_SEARCH_LIMIT); // Updated to use configurable limit
+
+    if (error) {
+      throw error;
+    }
+
+    console.log(`📊 Text search: ${data?.length || 0} sonuç bulundu`);
+    return data || [];
+
+  } catch (error) {
+    console.error('Supabase arama hatası:', error);
+    throw new Error('Veritabanı araması başarısız oldu');
+  }
+}
+
+// ================================================
+
+// 2. HOOK'TA BASİT ARAMA KULLANIMI
+// Dosya: /workspaces/gorkem/client/src/hooks/useDocumentSearch.ts
+
+// AI PASIF durumunda basit text search kullanımı:
+if (!enableAI) {
+  // AI PASIF: Sadece basit text search kullan
+  console.log('📝 Basit text search (AI pasif) yapılıyor...');
+  try {
+    const textResults = await supabaseService.searchDocuments(query, filters);
+    finalResults = textResults.map(doc => ({
+      ...doc,
+      similarity: 0.5,
+      searchType: 'text' as const
+    }));
+    searchMethod = 'text';
+    console.log(`✅ Basit text search tamamlandı: ${finalResults.length} sonuç`);
+  } catch (textError) {
+    console.error('❌ Basit text search başarısız:', textError);
+    throw textError;
+  }
+}
+
+// ================================================
+
+// 3. ARAMA ALANLARI ve FİLTRELEME
+// Basit aramada taranacak alanlar:
+
+const searchFields = [
+  'content',      // Belge içeriği (ana metin)
+  'short_desc',   // Kısa açıklama
+  'keywords',     // Anahtar kelimeler
+  'letter_no',    // Mektup numarası
+  'internal_no',  // Dahili numara
+  'ref_letters'   // Referans mektuplar
+];
+
+// Ek filtreleme alanları:
+const filterFields = {
+  'letter_date': 'Mektup tarihi (tarih aralığı)',
+  'type_of_corr': 'Yazışma türü',
+  'severity_rate': 'Önem derecesi',
+  'inc-out': 'Gelen/Giden',
+  'internal_no': 'Dahili numara (kısmi eşleşme)',
+  'keywords': 'Anahtar kelimeler (dizi)'
+};
+
+// ================================================
+
+// 4. SINIRLAMA ve SIRALAMA
+const DEFAULTS = {
+  TEXT_SEARCH_LIMIT: 200,     // Maksimum sonuç sayısı
+  VECTOR_THRESHOLD: 0.3,      // Vector benzerlik eşiği
+  VECTOR_FALLBACK_COUNT: 10   // Fallback sonuç sayısı
+};
+
+// Sıralama seçenekleri:
+const sortOptions = {
+  'letter_date': 'Mektup tarihine göre',
+  'similarity': 'Benzerlik skoruna göre',
+  'severity_rate': 'Önem derecesine göre',
+  'short_desc': 'Açıklamaya göre',
+  'letter_no': 'Mektup numarasına göre'
+};
+
+// ================================================
+
+// 5. KULLANICILAR İÇİN BASİT ARAMA AKIŞI
+
+/*
+1. Kullanıcı arama kutusuna metin girer
+2. AI ayarı pasifse (enableAI = false) basit arama tetiklenir
+3. PostgreSQL ILIKE operatörü ile 6 alanda arama yapılır:
+   - content (içerik)
+   - short_desc (kısa açıklama)  
+   - keywords (anahtar kelimeler)
+   - letter_no (mektup no)
+   - internal_no (dahili no)
+   - ref_letters (referans mektuplar)
+4. Ek filtreler uygulanır (tarih, tür, önem, vs.)
+5. Sonuçlar tarihe göre azalan sırada döndürülür
+6. Maksimum 200 sonuç gösterilir
+*/
+
+// ================================================
+
+// 6. PERFORMANS ve GÜVEN
+
+/*
+AVANTAJLAR:
+- Hızlı ve güvenilir
+- AI API'lerine bağımlı değil
+- Türkçe karakterleri destekler
+- Kısmi kelime eşleştirmesi (ILIKE %text%)
+- Çoklu alan araması
+- Esnek filtreleme
+
+KISITLAR:
+- Anlam tabanlı arama yok
+- Sinonim desteği sınırlı
+- Benzerlik skoru basit (0.5 sabit)
+- Kelime sırası önemli değil
+*/

@@ -1,13 +1,41 @@
 // Firebase & Google Sheets Configuration Management Component
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useUserSettings } from '../hooks/useUserSettings';
 import { UserConfig } from '../services/firebaseConfig';
 
-export default function ConfigManagement() {
+export default function Confi                  <input
+                               <input
+                    type="text"
+                  <input
+                    type="text"
+                    value={googleSheetsConfig?.projectId || ''}
+                    onChange={(e) => {
+                      setGoogleSheetsConfig(prev => ({ ...prev, projectId: e.target.value }));
+                      triggerAutoSave('googleSheets');
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="my-google-project"
+                  />             value={firebaseConfig?.measurementId || ''}
+                    onChange={(e) => {
+                      setFirebaseConfig(prev => ({ ...prev, measurementId: e.target.value }));
+                      triggerAutoSave('firebase');
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="G-XXXXXXXXXX (İsteğe bağlı)"
+                  />type="text"
+                    value={firebaseConfig?.projectId || ''}
+                    onChange={(e) => {
+                      setFirebaseConfig(prev => ({ ...prev, projectId: e.target.value }));
+                      triggerAutoSave('firebase');
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="my-firebase-project"
+                  />ment() {
   const { config, isLoading, error, updateConfig, hasValidFirebase, hasValidGoogleSheets } = useUserSettings();
   const [activeTab, setActiveTab] = useState<'firebase' | 'googleSheets' | 'server'>('firebase');
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
+  const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(null);
 
   // Form state'leri
   const [firebaseConfig, setFirebaseConfig] = useState<UserConfig['firebase']>({
@@ -25,7 +53,7 @@ export default function ConfigManagement() {
   });
 
   const [serverConfig, setServerConfig] = useState<UserConfig['server']>({
-    apiBaseUrl: config?.server?.apiBaseUrl || 'http://localhost:3001'
+    apiBaseUrl: config?.server?.apiBaseUrl || 'http://gorkemprojetakip.com.tr'
   });
 
   // Config güncellemelerini al
@@ -46,10 +74,65 @@ export default function ConfigManagement() {
       });
       
       setServerConfig({
-        apiBaseUrl: config.server?.apiBaseUrl || 'http://localhost:3001'
+        apiBaseUrl: config.server?.apiBaseUrl || 'http://gorkemprojetakip.com.tr'
       });
     }
   }, [config]);
+
+  // Otomatik kaydetme fonksiyonu
+  const autoSave = useCallback(async (configType: 'firebase' | 'googleSheets' | 'server') => {
+    try {
+      let updateData: Partial<UserConfig> = {};
+      
+      switch (configType) {
+        case 'firebase':
+          // Sadece dolu alanları kaydet
+          if (firebaseConfig?.apiKey || firebaseConfig?.authDomain || firebaseConfig?.projectId) {
+            updateData.firebase = firebaseConfig;
+          }
+          break;
+        case 'googleSheets':
+          // Sadece dolu alanları kaydet
+          if (googleSheetsConfig?.clientId || googleSheetsConfig?.projectId || googleSheetsConfig?.spreadsheetId) {
+            updateData.googleSheets = googleSheetsConfig;
+          }
+          break;
+        case 'server':
+          updateData.server = serverConfig;
+          break;
+      }
+      
+      if (Object.keys(updateData).length > 0) {
+        await updateConfig(updateData);
+        setSaveMessage(`✅ ${configType} otomatik kaydedildi`);
+        setTimeout(() => setSaveMessage(''), 2000);
+      }
+    } catch (err: any) {
+      console.error('Otomatik kaydetme hatası:', err);
+    }
+  }, [firebaseConfig, googleSheetsConfig, serverConfig, updateConfig]);
+
+  // Debounced auto save - değişiklikten 2 saniye sonra kaydet
+  const triggerAutoSave = useCallback((configType: 'firebase' | 'googleSheets' | 'server') => {
+    if (autoSaveTimer) {
+      clearTimeout(autoSaveTimer);
+    }
+    
+    const timer = setTimeout(() => {
+      autoSave(configType);
+    }, 2000); // 2 saniye bekle
+    
+    setAutoSaveTimer(timer);
+  }, [autoSave, autoSaveTimer]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+      }
+    };
+  }, [autoSaveTimer]);
 
   const handleSave = async (configType: 'firebase' | 'googleSheets' | 'server') => {
     setIsSaving(true);
@@ -188,7 +271,10 @@ export default function ConfigManagement() {
                   <input
                     type="password"
                     value={firebaseConfig?.apiKey || ''}
-                    onChange={(e) => setFirebaseConfig(prev => ({ ...prev, apiKey: e.target.value }))}
+                    onChange={(e) => {
+                      setFirebaseConfig(prev => ({ ...prev, apiKey: e.target.value }));
+                      triggerAutoSave('firebase');
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="AIzaSy..."
                   />
@@ -201,7 +287,10 @@ export default function ConfigManagement() {
                   <input
                     type="text"
                     value={firebaseConfig?.authDomain || ''}
-                    onChange={(e) => setFirebaseConfig(prev => ({ ...prev, authDomain: e.target.value }))}
+                    onChange={(e) => {
+                      setFirebaseConfig(prev => ({ ...prev, authDomain: e.target.value }));
+                      triggerAutoSave('firebase');
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="projectname.firebaseapp.com"
                   />
@@ -227,7 +316,10 @@ export default function ConfigManagement() {
                   <input
                     type="text"
                     value={firebaseConfig?.appId || ''}
-                    onChange={(e) => setFirebaseConfig(prev => ({ ...prev, appId: e.target.value }))}
+                    onChange={(e) => {
+                      setFirebaseConfig(prev => ({ ...prev, appId: e.target.value }));
+                      triggerAutoSave('firebase');
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="1:123456789:web:..."
                   />
@@ -272,7 +364,10 @@ export default function ConfigManagement() {
                   <input
                     type="text"
                     value={googleSheetsConfig?.clientId || ''}
-                    onChange={(e) => setGoogleSheetsConfig(prev => ({ ...prev, clientId: e.target.value }))}
+                    onChange={(e) => {
+                      setGoogleSheetsConfig(prev => ({ ...prev, clientId: e.target.value }));
+                      triggerAutoSave('googleSheets');
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="123456789-xxx.apps.googleusercontent.com"
                   />
@@ -334,10 +429,10 @@ export default function ConfigManagement() {
                   value={serverConfig?.apiBaseUrl || ''}
                   onChange={(e) => setServerConfig(prev => ({ ...prev, apiBaseUrl: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="http://localhost:3001"
+                  placeholder="http://gorkemprojetakip.com.tr"
                 />
                 <p className="text-sm text-gray-500 mt-1">
-                  Örnek: http://localhost:3001 veya https://api.yourdomain.com
+                  Örnek: http://gorkemprojetakip.com.tr veya https://api.yourdomain.com
                 </p>
               </div>
               

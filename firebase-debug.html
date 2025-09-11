@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Debug Test</title>
+</head>
+<body>
+    <h1>🔥 Firebase Debug Test</h1>
+    
+    <div id="results"></div>
+    <button onclick="testFirebase()">Firebase Test Et</button>
+    <button onclick="testConfig()">Config Test Et</button>
+
+    <!-- App Config yükle -->
+    <script src="/app-config.js"></script>
+    
+    <script type="module">
+        function log(message) {
+            const div = document.createElement('div');
+            div.innerHTML = `<pre>${message}</pre>`;
+            document.getElementById('results').appendChild(div);
+            console.log(message);
+        }
+
+        window.testConfig = function() {
+            document.getElementById('results').innerHTML = '';
+            
+            log('=== CONFIG TEST ===');
+            log('window.__APP_CONFIG__:');
+            log(JSON.stringify(window.__APP_CONFIG__, null, 2));
+            
+            log('\n=== FIREBASE CONFIG ===');
+            if (window.__APP_CONFIG__) {
+                const firebaseConfig = {
+                    apiKey: window.__APP_CONFIG__.FIREBASE_API_KEY,
+                    authDomain: window.__APP_CONFIG__.FIREBASE_AUTH_DOMAIN,
+                    projectId: window.__APP_CONFIG__.FIREBASE_PROJECT_ID,
+                    appId: window.__APP_CONFIG__.FIREBASE_APP_ID
+                };
+                log('Firebase Config:');
+                log(JSON.stringify(firebaseConfig, null, 2));
+                
+                // Boş değerleri kontrol et
+                const emptyFields = Object.entries(firebaseConfig)
+                    .filter(([key, value]) => !value || value === 'undefined')
+                    .map(([key]) => key);
+                    
+                if (emptyFields.length > 0) {
+                    log(`❌ BOŞ ALANLAR: ${emptyFields.join(', ')}`);
+                } else {
+                    log('✅ Tüm Firebase config değerleri mevcut');
+                }
+            } else {
+                log('❌ window.__APP_CONFIG__ bulunamadı!');
+            }
+        };
+
+        window.testFirebase = async function() {
+            log('\n=== FIREBASE TEST ===');
+            
+            try {
+                // Firebase modüllerini import et
+                const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js');
+                const { getAuth, signInAnonymously } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js');
+                
+                const config = {
+                    apiKey: window.__APP_CONFIG__?.FIREBASE_API_KEY,
+                    authDomain: window.__APP_CONFIG__?.FIREBASE_AUTH_DOMAIN,
+                    projectId: window.__APP_CONFIG__?.FIREBASE_PROJECT_ID,
+                    appId: window.__APP_CONFIG__?.FIREBASE_APP_ID
+                };
+                
+                log('Firebase config kullanılacak:');
+                log(JSON.stringify(config, null, 2));
+                
+                const app = initializeApp(config);
+                log('✅ Firebase app başlatıldı');
+                
+                const auth = getAuth(app);
+                log('✅ Firebase auth hazır');
+                
+                // Anonim oturum açmayı dene
+                const userCredential = await signInAnonymously(auth);
+                log('✅ Anonim giriş başarılı!');
+                log(`User ID: ${userCredential.user.uid}`);
+                
+            } catch (error) {
+                log(`❌ Firebase hatası: ${error.message}`);
+                log(`Stack: ${error.stack}`);
+            }
+        };
+
+        // Sayfa yüklendiğinde otomatik test
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                testConfig();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

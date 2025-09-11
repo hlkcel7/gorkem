@@ -102,15 +102,13 @@ export function useUserSettings(): UseUserSettingsReturn {
       }
 
       setConfig(userConfig);
-      console.log('🎯 useUserSettings: Config başarıyla yüklendi ve set edildi');
       
     } catch (err: any) {
-      console.error('❌ useUserSettings: Config yükleme hatası:', err);
       setError(err.message || 'Config yüklenemedi');
     } finally {
       setIsLoading(false);
     }
-  }, [user?.uid]); // user?.uid dependency'si gerekli
+  }, []); // dependency'leri tamamen kaldırıyoruz
 
   // Config güncelle (kısmi)
   const updateConfig = useCallback(async (updates: Partial<Omit<UserConfig, 'meta'>>) => {
@@ -128,7 +126,7 @@ export function useUserSettings(): UseUserSettingsReturn {
       setError(err.message || 'Config güncellenemedi');
       throw err;
     }
-  }, [user?.uid, config]);
+  }, []); // dependency'leri kaldırıyoruz
 
   // Tam config kaydet
   const saveConfig = useCallback(async (newConfig: UserConfig) => {
@@ -144,7 +142,7 @@ export function useUserSettings(): UseUserSettingsReturn {
       setError(err.message || 'Config kaydedilemedi');
       throw err;
     }
-  }, [user?.uid]);
+  }, []); // dependency'leri kaldırıyoruz
 
   // Default ayarlara sıfırla
   const resetToDefaults = useCallback(async () => {
@@ -160,18 +158,14 @@ export function useUserSettings(): UseUserSettingsReturn {
       setError(err.message || 'Config sıfırlanamadı');
       throw err;
     }
-  }, [user?.uid]);
+  }, []); // dependency'leri kaldırıyoruz
 
   // Auth değişikliklerinde config'i yükle - sadece bir kez
   useEffect(() => {
-    if (!authLoading && user?.uid) {
+    if (!authLoading && user?.uid && !config) {
       loadConfig();
-    } else if (!authLoading && !user?.uid) {
-      // User logged out - clear config
-      setConfig(null);
-      setIsLoading(false);
     }
-  }, [authLoading, user?.uid, loadConfig]);
+  }, [authLoading, user?.uid]); // loadConfig dependency'sini de kaldırdık
 
   // Real-time Firebase listener - sadece gerektiğinde
   useEffect(() => {

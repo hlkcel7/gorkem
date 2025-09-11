@@ -14,13 +14,27 @@ const BUILD_FIREBASE_CONFIG = {
 function getFirebaseConfig() {
   // @ts-ignore - window may have __APP_CONFIG__ injected at runtime
   const runtime = typeof window !== 'undefined' && (window as any).__APP_CONFIG__;
-  // Prefer runtime override (for deployments that inject a script), otherwise use build-time values
-  return {
-    apiKey: runtime?.VITE_FIREBASE_API_KEY || BUILD_FIREBASE_CONFIG.apiKey,
-    authDomain: runtime?.VITE_FIREBASE_AUTH_DOMAIN || BUILD_FIREBASE_CONFIG.authDomain,
-    projectId: runtime?.VITE_FIREBASE_PROJECT_ID || BUILD_FIREBASE_CONFIG.projectId,
-    appId: runtime?.VITE_FIREBASE_APP_ID || BUILD_FIREBASE_CONFIG.appId,
+  
+  // Runtime config'ten Firebase değerlerini al
+  const config = {
+    apiKey: runtime?.FIREBASE_API_KEY || BUILD_FIREBASE_CONFIG.apiKey,
+    authDomain: runtime?.FIREBASE_AUTH_DOMAIN || BUILD_FIREBASE_CONFIG.authDomain,
+    projectId: runtime?.FIREBASE_PROJECT_ID || BUILD_FIREBASE_CONFIG.projectId,
+    appId: runtime?.FIREBASE_APP_ID || BUILD_FIREBASE_CONFIG.appId,
   };
+
+  // Config validation - boş değerler için fallback
+  if (!config.apiKey && !config.projectId) {
+    console.warn('⚠️ Firebase config eksik, development fallback kullanılıyor');
+    return {
+      apiKey: "development-mode",
+      authDomain: "gorkemapp.firebaseapp.com",
+      projectId: "gorkemapp",
+      appId: "development-mode",
+    };
+  }
+
+  return config;
 }
 
 const firebaseConfig = getFirebaseConfig();
@@ -28,17 +42,27 @@ const firebaseConfig = getFirebaseConfig();
 let app: any = null;
 let authInstance: any = null;
 
-// Only initialize Firebase if we have a valid apiKey (avoid invalid-api-key runtime errors)
-if (firebaseConfig.apiKey) {
-  try {
-    app = initializeApp(firebaseConfig as any);
+// Firebase initialization with better error handling
+try {
+  const config = getFirebaseConfig();
+  console.log('🔧 Firebase config:', { 
+    projectId: config.projectId,
+    authDomain: config.authDomain,
+    hasApiKey: !!config.apiKey,
+    hasAppId: !!config.appId
+  });
+
+  if (config.apiKey && config.apiKey !== "development-mode") {
+    app = initializeApp(config as any);
     authInstance = getAuth(app);
-    console.log('Firebase initialized with runtime config');
-  } catch (err) {
-    console.error('Failed to initialize Firebase:', err);
+    console.log('✅ Firebase initialized successfully');
+  } else {
+    console.warn('⚠️ Firebase development mode - auth disabled');
+    console.log('💡 Gerçek Firebase credentials için app-config.js\'i güncelleyin');
   }
-} else {
-  console.warn('Firebase config missing; auth disabled in this environment');
+} catch (err) {
+  console.error('❌ Firebase initialization failed:', err);
+  console.log('💡 Fallback mode: Auth features disabled');
 }
 
 export const auth = authInstance;

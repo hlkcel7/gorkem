@@ -25,7 +25,7 @@ export default function ConfigManagement() {
   });
 
   const [serverConfig, setServerConfig] = useState<UserConfig['server']>({
-    apiBaseUrl: config?.server?.apiBaseUrl || 'http://localhost:3001'
+    apiBaseUrl: config?.server?.apiBaseUrl || 'http://gorkemprojetakip.com.tr'
   });
 
   // Config güncellemelerini al
@@ -46,7 +46,7 @@ export default function ConfigManagement() {
       });
       
       setServerConfig({
-        apiBaseUrl: config.server?.apiBaseUrl || 'http://localhost:3001'
+        apiBaseUrl: config.server?.apiBaseUrl || 'http://gorkemprojetakip.com.tr'
       });
     }
   }, [config]);
@@ -334,10 +334,10 @@ export default function ConfigManagement() {
                   value={serverConfig?.apiBaseUrl || ''}
                   onChange={(e) => setServerConfig(prev => ({ ...prev, apiBaseUrl: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="http://localhost:3001"
+                  placeholder="http://gorkemprojetakip.com.tr"
                 />
                 <p className="text-sm text-gray-500 mt-1">
-                  Örnek: http://localhost:3001 veya https://api.yourdomain.com
+                  Örnek: http://gorkemprojetakip.com.tr veya https://api.yourdomain.com
                 </p>
               </div>
               

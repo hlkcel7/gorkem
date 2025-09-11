@@ -105,7 +105,14 @@ class FirebaseConfigService {
 
       if (docSnap.exists()) {
         const data = docSnap.data() as UserConfig;
-        console.log('✅ Firebase\'den user config bulundu');
+        console.log('✅ Firebase\'den user config bulundu:');
+        console.log('📋 Config içeriği:', {
+          hasSupabase: !!data.supabase?.url,
+          hasApis: !!(data.apis?.openai || data.apis?.deepseek),
+          hasFirebase: !!data.firebase?.apiKey,
+          hasGoogleSheets: !!data.googleSheets?.clientId,
+          hasServer: !!data.server?.apiBaseUrl
+        });
         return data;
       } else {
         console.log('⚠️ Firebase\'de user config bulunamadı, default oluşturulacak');
@@ -152,7 +159,7 @@ class FirebaseConfigService {
         },
         // Server config
         server: {
-          apiBaseUrl: appConfig?.API_BASE_URL || 'http://localhost:3001'
+          apiBaseUrl: appConfig?.API_BASE_URL || 'http://gorkemprojetakip.com.tr'
         },
         meta: {
           createdAt: Timestamp.now(),
@@ -315,7 +322,7 @@ class FirebaseConfigService {
         },
         // Server config ekle
         server: {
-          apiBaseUrl: appConfig?.API_BASE_URL || 'http://localhost:3001'
+          apiBaseUrl: appConfig?.API_BASE_URL || 'http://gorkemprojetakip.com.tr'
         },
         search: {
           enableAI: localSettings?.enableAI ?? true,

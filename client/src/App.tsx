@@ -11,9 +11,11 @@ import DocumentSearchPage from "@/pages/document-search";
 import Login from "@/pages/login";
 import Sidebar from "@/components/sidebar";
 import LoadingOverlay from "@/components/loading-overlay";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserSettings } from "@/hooks/useUserSettings";
+import { useDocumentSearch } from "@/hooks/useDocumentSearch";
 import { Button } from "@/components/ui/button";
 
 function Router() {
@@ -33,6 +35,39 @@ function AuthenticatedApp() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
   const { user, signOut } = useAuth();
+  const { config } = useUserSettings();
+  const { configureServices } = useDocumentSearch();
+
+  // Global config watcher - Otomatik servis konfigürasyonu
+  useEffect(() => {
+    if (!config) return;
+    
+    console.log('🌐 Global: Config değişikliği tespit edildi, servisleri otomatik konfigüre ediliyor...');
+    
+    // Config'i eski formata çevir
+    const serviceConfigs = {
+      supabase: config.supabase?.url && config.supabase?.anonKey ? {
+        url: config.supabase.url,
+        anonKey: config.supabase.anonKey
+      } : undefined,
+      deepseek: config.apis?.deepseek ? {
+        apiKey: config.apis.deepseek
+      } : undefined,
+      openai: config.apis?.openai ? {
+        apiKey: config.apis.openai
+      } : undefined
+    };
+
+    // Sadece geçerli config'ler varsa configure et
+    if (serviceConfigs.supabase || serviceConfigs.deepseek || serviceConfigs.openai) {
+      try {
+        configureServices(serviceConfigs);
+        console.log('✅ Global: Servisler başarıyla otomatik konfigüre edildi');
+      } catch (error) {
+        console.error('❌ Global: Otomatik servis konfigürasyonu başarısız:', error);
+      }
+    }
+  }, [config, configureServices]);
 
   const handleLogout = async () => {
     try {

@@ -137,7 +137,7 @@ const filterFields = {
 
 // 4. SINIRLAMA ve SIRALAMA
 const DEFAULTS = {
-  TEXT_SEARCH_LIMIT: 200,     // Maksimum sonuç sayısı
+  TEXT_SEARCH_LIMIT: 20000,     // Maksimum sonuç sayısı
   VECTOR_THRESHOLD: 0.3,      // Vector benzerlik eşiği
   VECTOR_FALLBACK_COUNT: 10   // Fallback sonuç sayısı
 };
@@ -167,7 +167,7 @@ const sortOptions = {
    - ref_letters (referans mektuplar)
 4. Ek filtreler uygulanır (tarih, tür, önem, vs.)
 5. Sonuçlar tarihe göre azalan sırada döndürülür
-6. Maksimum 200 sonuç gösterilir
+6. Maksimum 20000 sonuç gösterilir
 */
 
 // ================================================

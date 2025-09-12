@@ -97,7 +97,7 @@ export default function InfoCenterPage(): JSX.Element {
     if (error) console.error('Info Center error', error);
   }, [error]);
 
-  // Initialize filters when data arrives
+  // Initialize filters when component mounts
   useEffect(() => {
     setFilters({
       global: { value: null, matchMode: 'contains' },
@@ -105,9 +105,10 @@ export default function InfoCenterPage(): JSX.Element {
       short_desc: { value: null, matchMode: 'contains' },
       ref_letters: { value: null, matchMode: 'contains' },
       severity_rate: { value: null, matchMode: 'equals' },
-      letter_date: { value: null, matchMode: 'between' },
+      letter_date: { value: null, matchMode: 'dateRange' },
+      keywords: { value: null, matchMode: 'contains' }
     });
-  }, [data]);
+  }, []);
 
   const severityOptions = useMemo(() => {
     const set = new Set<string>();
@@ -232,13 +233,81 @@ export default function InfoCenterPage(): JSX.Element {
                 emptyMessage="No records found"
                 className="p-datatable-gridlines"
               >
-                <Column field="letter_no" header="letter_no" sortable filter filterPlaceholder="Filter By letter_no" />
-                <Column field="letter_date" header="letter_date" sortable body={DateBody} filter filterElement={<Calendar dateFormat="yy-mm-dd" selectionMode="range" onChange={(e) => setFilters((f: any) => ({ ...f, letter_date: { value: e.value, matchMode: 'between' } }))} />} />
-                <Column field="short_desc" header="short_desc" sortable filter filterPlaceholder="Filter By short_desc" />
-                <Column field="ref_letters" header="ref_letters" sortable filter filterPlaceholder="Filter By ref_letters" />
-                <Column field="severity_rate" header="severity_rate" sortable body={SeverityBody} filter filterElement={<Dropdown options={severityOptions} onChange={(e) => setFilters((f: any) => ({ ...f, severity_rate: { value: e.value, matchMode: 'equals' } }))} placeholder="All" />} />
-                <Column field="keywords" header="keywords" sortable filter filterPlaceholder="Filter By keywords" />
-                <Column field="web_url" header="web_url" body={WebUrlBody} />
+                <Column 
+                  field="letter_no" 
+                  header="letter_no" 
+                  sortable 
+                  filter 
+                  showFilterMenu={false}
+                  filterPlaceholder="Search letter_no" 
+                />
+                <Column 
+                  field="letter_date" 
+                  header="letter_date" 
+                  sortable 
+                  filter 
+                  showFilterMenu={false}
+                  filterElement={
+                    <Calendar 
+                      dateFormat="yy-mm-dd" 
+                      selectionMode="range" 
+                      onChange={(e) => setFilters((prev: any) => ({
+                        ...prev,
+                        letter_date: { value: e.value, matchMode: 'dateRange' }
+                      }))}
+                      className="w-full"
+                    />
+                  } 
+                  body={DateBody}
+                />
+                <Column 
+                  field="short_desc" 
+                  header="short_desc" 
+                  sortable 
+                  filter 
+                  showFilterMenu={false}
+                  filterPlaceholder="Search short_desc" 
+                />
+                <Column 
+                  field="ref_letters" 
+                  header="ref_letters" 
+                  sortable 
+                  filter 
+                  showFilterMenu={false}
+                  filterPlaceholder="Search ref_letters" 
+                />
+                <Column 
+                  field="severity_rate" 
+                  header="severity_rate" 
+                  sortable 
+                  filter 
+                  showFilterMenu={false}
+                  filterElement={
+                    <Dropdown 
+                      options={severityOptions} 
+                      onChange={(e) => setFilters((prev: any) => ({
+                        ...prev,
+                        severity_rate: { value: e.value, matchMode: 'equals' }
+                      }))}
+                      placeholder="All"
+                      className="w-full"
+                    />
+                  } 
+                  body={SeverityBody}
+                />
+                <Column 
+                  field="keywords" 
+                  header="keywords" 
+                  sortable 
+                  filter 
+                  showFilterMenu={false}
+                  filterPlaceholder="Search keywords" 
+                />
+                <Column 
+                  field="web_url" 
+                  header="web_url" 
+                  body={WebUrlBody} 
+                />
               </DataTable>
             </div>
           )}

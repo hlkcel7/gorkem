@@ -1,24 +1,24 @@
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import Dashboard from "@/pages/dashboard";
-import SheetView from "@/pages/sheet-view";
-import { FinancialPage } from "@/pages/financial";
-import ProjectsPage from "@/pages/projects";
-import DocumentSearchPage from "@/pages/document-search";
-import InfoCenterPage from "@/pages/info-center";
-import Login from "@/pages/login";
-import Sidebar from "@/components/sidebar";
-import LoadingOverlay from "@/components/loading-overlay";
+import { Toaster } from "./components/ui/toaster";
+import { TooltipProvider } from "./components/ui/tooltip";
+import Dashboard from "./pages/dashboard";
+import SheetView from "./pages/sheet-view";
+import { FinancialPage } from "./pages/financial";
+import ProjectsPage from "./pages/projects";
+import DocumentSearchPage from "./pages/document-search";
+import InfoCenterPage from "./pages/info-center";
+import Login from "./pages/login";
+import Sidebar from "./components/sidebar";
+import LoadingOverlay from "./components/loading-overlay";
 import { useState, useEffect } from "react";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useAuth } from "@/hooks/useAuth";
-import { useUserSettings } from "@/hooks/useUserSettings";
-import { useDocumentSearch } from "@/hooks/useDocumentSearch";
-import { DEV_SUPABASE_CONFIG } from "@/dev-supabase-config";
-import { Button } from "@/components/ui/button";
+import { useIsMobile } from "./hooks/use-mobile";
+import { useAuth } from "./hooks/useAuth";
+import { useUserSettings } from "./hooks/useUserSettings";
+import { useDocumentSearch } from "./hooks/useDocumentSearch";
+import { DEV_SUPABASE_CONFIG } from "./dev-supabase-config";
+import { Button } from "./components/ui/button";
 
 function Router() {
   return (

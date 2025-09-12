@@ -229,7 +229,7 @@ export function useDocumentSearch() {
             console.warn('⚠️ Fallback vector search da başarısız, text search\'e geçiliyor:', vectorError);
             try {
               const textResults = await supabaseService.searchDocuments(query, filters);
-              finalResults = textResults.map(doc => ({
+              finalResults = textResults.map((doc: DocumentRecord) => ({
                 ...doc,
                 similarity: 0.5,
                 searchType: 'text' as const
@@ -247,7 +247,7 @@ export function useDocumentSearch() {
         console.log('📝 Basit text search (AI pasif) yapılıyor...');
         try {
           const textResults = await supabaseService.searchDocuments(query, filters);
-          finalResults = textResults.map(doc => ({
+          finalResults = textResults.map((doc: DocumentRecord) => ({
             ...doc,
             similarity: 0.5,
             searchType: 'text' as const
@@ -334,9 +334,9 @@ export function useDocumentSearch() {
     try {
       // Neo4j kaldırıldı, benzer belgeleri Supabase'den alıyoruz
       const similar = await supabaseService.findSimilarDocuments(documentId, 10);
-      return { 
-        nodes: similar.map(doc => ({ id: doc.id, label: doc.short_desc || 'Başlıksız' })), 
-        relationships: [] 
+      return {
+        nodes: similar.map((doc: DocumentRecord) => ({ id: doc.id, label: doc.short_desc || 'Başlıksız' })),
+        relationships: []
       };
     } catch (error) {
       console.error('Belge ağı alınamadı:', error);

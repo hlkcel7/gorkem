@@ -1,6 +1,6 @@
 // Client-side Google Sheets data management hook
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { googleSheetsClient } from '@/services/googleSheets';
+import { googleSheetsClient } from '../services/googleSheets';
 // Google Sheets integration deprecated: returning empty lists to avoid UI crashes.
 
 interface Sheet {
@@ -46,9 +46,9 @@ export function useSheetData(sheetName: string) {
         }
         
         const headers = data[0] || [];
-        const records = data.slice(1).map((row, index) => {
+        const records = data.slice(1).map((row: any[], index: number) => {
           const record: SheetRecord = { _rowIndex: index.toString() };
-          headers.forEach((header, colIndex) => {
+          headers.forEach((header: string, colIndex: number) => {
             record[header] = row[colIndex] || '';
           });
           return record;

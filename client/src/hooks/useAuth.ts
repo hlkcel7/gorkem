@@ -1,6 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
 import { onAuthStateChanged, type User } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth } from "../lib/firebase";
 import { useEffect, useState } from "react";
 
 export function useAuth() {

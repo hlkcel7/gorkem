@@ -1,10 +1,10 @@
 import { useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
+import { Button } from "../components/ui/button";
 import CreateSheetModal from "./create-sheet-modal";
 import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "../hooks/use-toast";
 // Google Sheets integration removed for Info Center migration
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest } from "../lib/queryClient";
 import RenameSheetModal from "./rename-sheet-modal";
 
 interface SidebarProps {

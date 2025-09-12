@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { useUpdateRecord, useAddRecord } from "@/hooks/useSheets";
+import { Card } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { useToast } from "../hooks/use-toast";
+import { useUpdateRecord, useAddRecord } from "../hooks/useSheets";
 import { Plus, Save, RefreshCw } from "lucide-react";
 
 interface SheetTableProps {

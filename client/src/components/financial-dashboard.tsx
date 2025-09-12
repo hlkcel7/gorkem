@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { Progress } from '../components/ui/progress';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -13,7 +13,7 @@ import {
   Building2,
   BarChart3 
 } from 'lucide-react';
-import { googleSheetsClient } from '@/services/googleSheets';
+import { googleSheetsClient } from '../services/googleSheets';
 
 interface FinancialKPI {
   toplam_gelir: number;

@@ -1,20 +1,44 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabaseService } from '../services/supabase';
+import { supabaseService, type DocumentRecord } from '../services/supabase';
 
-export interface InfoCenterPageResult {
-  rows: any[];
-  total: number;
+/**
+ * Sortable fields in the InfoCenter view
+ */
+export type SortableFields = 'letter_no' | 'letter_date' | 'short_desc' | 'severity_rate' | 'keywords';
+
+/**
+ * Normalized document format for the InfoCenter view
+ */
+export interface InfoCenterDocument {
+  letter_no: string;
+  letter_date: string;
+  short_desc: string;
+  ref_letters: string;
+  severity_rate: string;
+  keywords: string;
+  web_url: string | null;
 }
 
-export function useInfoCenterPage(opts: {
+export interface InfoCenterPageOptions {
   pageIndex: number;
   pageSize: number;
   search?: string;
-  sortField?: string;
+  sortField?: SortableFields;
   sortOrder?: 'asc' | 'desc';
-}) {
+}
+
+export interface InfoCenterPageResult {
+  rows: InfoCenterDocument[];
+  total: number;
+}
+
+/**
+ * Custom hook for fetching paginated and sorted documents for the InfoCenter view
+ */
+export function useInfoCenterPage(opts: InfoCenterPageOptions) {
   const { pageIndex, pageSize, search, sortField, sortOrder } = opts;
-  return useQuery({
+
+  return useQuery<InfoCenterPageResult, Error>({
     queryKey: [
       'info-center-page',
       pageIndex,
@@ -24,25 +48,40 @@ export function useInfoCenterPage(opts: {
       sortOrder ?? 'desc'
     ],
     queryFn: async () => {
-      // @ts-ignore
-      const client = (supabaseService as any).client;
-      if (!client) throw new Error('Supabase client not configured');
-
-      const selectFields = 'letter_no,letter_date,short_desc,ref_letters,severity_rate,keywords,weburl';
-      const start = pageIndex * pageSize;
-      const end = start + pageSize - 1;
-
-      const qb: any = (client as any).from('documents').select(selectFields, { count: 'exact' });
-      if (search && String(search).trim().length > 0) qb.ilike('content', `%${String(search).trim()}%`);
-      const orderField = sortField || 'letter_date';
-      const ascending = sortOrder === 'asc';
-      const { data, count, error, status } = await qb.order(orderField, { ascending }).range(start, end);
-      if (error) {
-        if (status === 416) return { rows: [], total: count ?? 0 };
-        throw error;
+      const testResult = await supabaseService.testConnection();
+      if (!testResult) {
+        throw new Error('Supabase connection failed');
       }
-      const rows = (data || []).map((r: any) => ({ ...r, web_url: r.weburl ?? r.web_url ?? null }));
-      return { rows, total: typeof count === 'number' ? count : rows.length } as InfoCenterPageResult;
+
+      try {
+        // Get documents using the service with server-side pagination and sorting
+        const { data: documents, count } = await supabaseService.searchDocuments(search ?? '', {
+          page: pageIndex,
+          pageSize: pageSize,
+          sortBy: (sortField ?? 'letter_date') as any,
+          sortOrder: sortOrder ?? 'desc'
+        });
+        
+        // Map to client format
+        const rows = documents.map((doc: DocumentRecord): InfoCenterDocument => ({
+          letter_no: doc.letter_no ?? '',
+          letter_date: doc.letter_date ?? '',
+          short_desc: doc.short_desc ?? '',
+          ref_letters: doc.ref_letters ?? '',
+          severity_rate: doc.severity_rate ?? '',
+          keywords: doc.keywords ?? '',
+          web_url: doc.weburl ?? null
+        }));
+
+        // Return total from database for accurate count
+        return {
+          rows,
+          total: count || 0  // Using the total count from the database
+        };
+      } catch (error) {
+        console.error('Error fetching documents:', error);
+        throw error instanceof Error ? error : new Error('Failed to fetch documents');
+      }
     },
     staleTime: 30 * 1000
   });

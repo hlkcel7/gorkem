@@ -210,8 +210,11 @@ class SupabaseService {
   // Yapılandırılmış belge arama
   async searchDocuments(
     query: string, 
-    filters?: SearchFilters
-  ): Promise<DocumentRecord[]> {
+    filters?: SearchFilters & {
+      page?: number;
+      pageSize?: number;
+    }
+  ): Promise<{ data: DocumentRecord[]; count: number }> {
     try {
       if (!this.client) {
         throw new Error('Supabase istemcisi başlatılmamış');
@@ -219,9 +222,9 @@ class SupabaseService {
 
       let queryBuilder = this.client
         .from('documents')
-        .select('*');
+        .select('*', { count: 'exact' });
 
-      // Full-text search - basit arama (vector search zaten translation yapacak)
+      // Full-text search
       if (query.trim()) {
         console.log(`🔍 Text search sorgusu: "${query}"`);
         
@@ -271,16 +274,27 @@ class SupabaseService {
       const sortBy = filters?.sortBy || 'letter_date';
       const sortOrder = filters?.sortOrder || 'desc';
       
-      const { data, error } = await queryBuilder
-        .order(sortBy, { ascending: sortOrder === 'asc' })
-  .limit(DEFAULTS.TEXT_SEARCH_LIMIT); // Updated to use configurable limit
+      // Sıralama uygula
+      queryBuilder = queryBuilder.order(sortBy, { ascending: sortOrder === 'asc' });
+
+      // Sayfalama uygula
+      if (typeof filters?.page === 'number' && typeof filters?.pageSize === 'number') {
+        const start = filters.page * filters.pageSize;
+        const end = start + filters.pageSize - 1;
+        queryBuilder = queryBuilder.range(start, end);
+      }
+
+      const { data, error, count } = await queryBuilder;
 
       if (error) {
         throw error;
       }
 
-      console.log(`📊 Text search: ${data?.length || 0} sonuç bulundu`);
-      return data || [];
+      console.log(`📊 Text search: ${data?.length || 0} sonuç bulundu (toplam: ${count})`);
+      return { 
+        data: data || [], 
+        count: count || 0 
+      };
 
     } catch (error) {
       console.error('Supabase arama hatası:', error);
@@ -719,7 +733,7 @@ class SupabaseService {
         this.searchDocuments(query, filters)
       ]);
 
-      console.log(`📊 Vector: ${vectorResults.length}, Text: ${textResults.length} sonuç`);
+      console.log(`Vector: ${vectorResults.length}, Text: ${textResults.data?.length || 0} results`);
 
       // Sonuçları birleştir ve skorla
       const combinedResults = new Map<number, VectorSearchResult>();
@@ -748,7 +762,7 @@ class SupabaseService {
       const queryTokens = tokenize(query);
 
       // Text sonuçlarını ekle veya skorunu güncelle
-      textResults.forEach(doc => {
+      (textResults.data || []).forEach(doc => {
         let textScore = 0.5 * textWeight;
         if (textOptions.textScoreMethod === 'overlap') {
           const textToScore = `${doc.short_desc || ''} ${doc.content || ''} ${doc.keywords || ''}`;
@@ -792,7 +806,7 @@ class SupabaseService {
       console.error('Hybrid search hatası:', error);
       // Fallback: sadece text search
       const textResults = await this.searchDocuments(query, options.filters);
-      return textResults.map(doc => ({
+      return (textResults.data || []).map(doc => ({
         ...doc,
         similarity: 0.5,
         searchType: 'text' as const

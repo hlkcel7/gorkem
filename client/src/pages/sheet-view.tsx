@@ -1,10 +1,10 @@
 import { useParams } from "wouter";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { SheetTable } from "@/components/sheet-table";
-import { useSheets, useSheetData } from "@/hooks/useSheets";
+import { Card } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { SheetTable } from "../components/sheet-table";
+import { useSheets, useSheetData } from "../hooks/useSheets";
 import { RefreshCw, Save, Download } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "../hooks/use-toast";
 
 export default function SheetView() {
   const { id } = useParams();

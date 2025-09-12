@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FinancialDashboard } from '@/components/financial-dashboard';
-import { ProjectDashboard } from '@/components/project-dashboard';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { FinancialDashboard } from '../components/financial-dashboard';
+import { ProjectDashboard } from '../components/project-dashboard';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
 import { 
   BarChart3, 
   FileSpreadsheet,
@@ -11,7 +11,7 @@ import {
   AlertTriangle,
   Building
 } from 'lucide-react';
-import { FinancialDataEntry } from '@/components/financial-data-entry';
+import { FinancialDataEntry } from '../components/financial-data-entry';
 
 export function FinancialPage() {
   const [activeTab, setActiveTab] = useState('dashboard');

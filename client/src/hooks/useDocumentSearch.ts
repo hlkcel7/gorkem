@@ -228,14 +228,14 @@ export function useDocumentSearch() {
           } catch (vectorError) {
             console.warn('⚠️ Fallback vector search da başarısız, text search\'e geçiliyor:', vectorError);
             try {
-              const textResults = await supabaseService.searchDocuments(query, filters);
+              const { data: textResults, count } = await supabaseService.searchDocuments(query, filters);
               finalResults = textResults.map((doc: DocumentRecord) => ({
                 ...doc,
                 similarity: 0.5,
                 searchType: 'text' as const
               }));
               searchMethod = 'text';
-              console.log(`✅ Fallback text search tamamlandı: ${finalResults.length} sonuç`);
+              console.log(`✅ Fallback text search tamamlandı: ${finalResults.length} sonuç (toplam: ${count})`);
             } catch (textError) {
               console.error('❌ Fallback text search de başarısız:', textError);
               throw textError;
@@ -246,14 +246,14 @@ export function useDocumentSearch() {
         // AI PASIF: Sadece basit text search kullan
         console.log('📝 Basit text search (AI pasif) yapılıyor...');
         try {
-          const textResults = await supabaseService.searchDocuments(query, filters);
+          const { data: textResults, count } = await supabaseService.searchDocuments(query, filters);
           finalResults = textResults.map((doc: DocumentRecord) => ({
             ...doc,
             similarity: 0.5,
             searchType: 'text' as const
           }));
           searchMethod = 'text';
-          console.log(`✅ Basit text search tamamlandı: ${finalResults.length} sonuç`);
+          console.log(`✅ Basit text search tamamlandı: ${finalResults.length} sonuç (toplam: ${count})`);
         } catch (textError) {
           console.error('❌ Basit text search başarısız:', textError);
           throw textError;

@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { auth } from "@/lib/firebase";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { auth } from "../lib/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { googleSheetsClient } from "@/services/googleSheets";
+//import { googleSheetsClient } from "@/services/googleSheets";
 import { useLocation } from "wouter";
 
 export default function Login() {

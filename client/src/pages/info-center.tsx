@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useInfoCenterPage } from '@/hooks/useInfoCenterPage';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useInfoCenterPage } from '../hooks/useInfoCenterPage';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 
 // PrimeReact styles (imported here to keep changes localized)
 import 'primereact/resources/themes/saga-blue/theme.css';
@@ -55,11 +55,22 @@ function SeverityBody(rowData: any) {
   );
 }
 
+import type { SortableFields } from '../hooks/useInfoCenterPage';
+
+interface PageQuery {
+  pageIndex: number;
+  pageSize: number;
+  search?: string;
+  sortField?: SortableFields;
+  sortOrder?: 'asc' | 'desc';
+}
+
 export default function InfoCenterPage(): JSX.Element {
   const [globalFilter, setGlobalFilter] = useState<string>('');
   const [filters, setFilters] = useState<any>(null);
   const [globalFilterOnly, setGlobalFilterOnly] = useState<boolean>(false);
   const [savedFilters, setSavedFilters] = useState<any>(null);
+  
   // debounce the global filter to avoid firing a request on every keystroke
   const [debouncedFilter, setDebouncedFilter] = useState<string>('');
   useEffect(() => {
@@ -67,15 +78,20 @@ export default function InfoCenterPage(): JSX.Element {
     return () => clearTimeout(t);
   }, [globalFilter]);
 
-  // Server-side pagination state
-  const [pageIndex, setPageIndex] = useState(0);
-  const [pageSize, setPageSize] = useState(25);
-  const pageQuery = useInfoCenterPage({ pageIndex, pageSize, search: debouncedFilter });
-  const pageResult = pageQuery.data as { rows: any[]; total: number } | undefined;
+  // Server-side state
+  const [query, setQuery] = useState<PageQuery>({
+    pageIndex: 0,
+    pageSize: 25,
+    sortField: 'letter_date',
+    sortOrder: 'desc'
+  });
+  
+  const { data: pageResult, isLoading, error } = useInfoCenterPage({ 
+    ...query,
+    search: debouncedFilter 
+  });
   const data = pageResult?.rows || [];
   const totalRecords = pageResult?.total ?? 0;
-  const isLoading = pageQuery.isLoading;
-  const error = pageQuery.error;
 
   useEffect(() => {
     if (error) console.error('Info Center error', error);
@@ -182,16 +198,32 @@ export default function InfoCenterPage(): JSX.Element {
           ) : (
             <div>
               <DataTable
-                value={data || []}
+                value={data}
                 lazy
                 paginator
-                first={pageIndex * pageSize}
-                rows={pageSize}
+                first={query.pageIndex * query.pageSize}
+                rows={query.pageSize}
                 totalRecords={totalRecords}
-                onPage={(e: any) => {
-                  setPageIndex(Math.floor(e.first / e.rows));
-                  setPageSize(e.rows);
+                rowsPerPageOptions={[10, 25, 50, 100]}
+                onPage={(e) => {
+                  setQuery(prev => ({
+                    ...prev,
+                    pageIndex: Math.floor(e.first / e.rows),
+                    pageSize: e.rows
+                  }));
                 }}
+                onSort={(e) => {
+                  const field = e.sortField as SortableFields;
+                  const order = e.sortOrder === 1 ? 'asc' : 'desc';
+                  setQuery(prev => ({
+                    ...prev,
+                    sortField: field,
+                    sortOrder: order
+                  }));
+                }}
+                sortField={query.sortField}
+                sortOrder={query.sortOrder === 'asc' ? 1 : -1}
+                loading={isLoading}
                 responsiveLayout="scroll"
                 footer={footer}
                 filters={filters}

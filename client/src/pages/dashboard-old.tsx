@@ -1,7 +1,7 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import DashboardCharts from "@/components/dashboard-charts";
-import { useDashboardData } from "@/hooks/useSheets";
+import { Card, CardContent } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import DashboardCharts from "../components/dashboard-charts";
+import { useDashboardData } from "../hooks/useSheets";
 
 export default function Dashboard() {
   const { data: dashboardData, isLoading, error } = useDashboardData();

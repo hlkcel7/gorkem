@@ -1,6 +1,7 @@
 // Client-side Google Sheets data management hook
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { googleSheetsClient } from '@/services/googleSheets';
+// Google Sheets integration deprecated: returning empty lists to avoid UI crashes.
 
 interface Sheet {
   id: string;
@@ -22,33 +23,7 @@ const SPREADSHEET_ID = () => {
 export function useSheets() {
   return useQuery({
     queryKey: ['sheets'],
-    queryFn: async () => {
-      try {
-        // Initialize the service first to load stored token
-        await googleSheetsClient.initialize();
-        
-        // Try to get spreadsheet info - this will trigger authentication if needed
-        console.log('Attempting to fetch sheets...');
-        const spreadsheetInfo = await googleSheetsClient.getSpreadsheetInfo(SPREADSHEET_ID());
-        
-        // Convert Google Sheets tabs to our Sheet format
-        const sheets: Sheet[] = spreadsheetInfo.sheets.map((sheet, index) => ({
-          id: sheet.id.toString(),
-          name: sheet.title,
-          googleSheetId: SPREADSHEET_ID(),
-          sheetTabId: sheet.id,
-          headers: []
-        }));
-        
-        console.log('Successfully fetched sheets:', sheets);
-        return sheets;
-      } catch (error) {
-        console.error('Error fetching sheets:', error);
-        // Return empty array instead of throwing to prevent UI crashes
-        console.log('User not authenticated with Google Sheets, returning default data');
-        return [];
-      }
-    },
+    queryFn: async () => [] as Sheet[],
     staleTime: 30 * 1000, // 30 seconds - shorter to check auth more frequently
     retry: 2, // Retry failed requests
   });
@@ -146,7 +121,7 @@ export function useUpdateRecord() {
       if (previous) {
         const next = { ...previous };
         const records = Array.isArray(next.records) ? [...next.records] : [];
-        const target = { ...records[rowIndex] } || {};
+  const target = records && records[rowIndex] ? { ...records[rowIndex] } : {};
         // merge by header keys if available
         if (next.headers && Array.isArray(next.headers)) {
           next.headers.forEach((h: string, ci: number) => {
@@ -227,7 +202,15 @@ export function useDashboardData() {
             income: 0,
             expenses: 0,
             projects: 0
-          }
+          },
+          // Provide legacy dashboard fields with safe defaults
+          totalIncome: 0,
+          totalExpenses: 0,
+          netProfit: 0,
+          activeProjects: 0,
+          monthlyData: [],
+          expenseCategories: [],
+          projects: []
         };
       } catch (error) {
         console.error('Error fetching dashboard data:', error);

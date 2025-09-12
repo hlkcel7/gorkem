@@ -40,7 +40,6 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  CloudSync,
   User
 } from 'lucide-react';
 import { useDocumentSearch } from '../hooks/useDocumentSearch';
@@ -97,6 +96,9 @@ export default function DocumentSearchPage() {
     isLoading: settingsLoading, 
     saveUserSettings
   } = useUserSettingsLegacy();
+
+  // Some older code referenced settingsError; provide a safe local var
+  const settingsError = (settings as any)?._error || null;
   
   // Filters
   const [filters, setFilters] = useState({
@@ -432,7 +434,7 @@ export default function DocumentSearchPage() {
               <Checkbox
                 id="enable-ai"
                 checked={enableAI}
-                onCheckedChange={setEnableAI}
+                onCheckedChange={(checked) => setEnableAI(Boolean(checked))}
               />
               <Label 
                 htmlFor="enable-ai" 
@@ -726,11 +728,11 @@ export default function DocumentSearchPage() {
                     <div>
                       <h4 className="font-medium mb-2">Arama Stratejisi</h4>
                       <div className="space-y-1 text-sm">
-                        {queryEnhancement?.searchTerms && (
-                          <div><strong>Anahtar Kelimeler:</strong> {queryEnhancement.searchTerms.join(', ')}</div>
+                        {queryEnhancement && (queryEnhancement as any).searchTerms && (
+                          <div><strong>Anahtar Kelimeler:</strong> {(queryEnhancement as any).searchTerms.join(', ')}</div>
                         )}
-                        {queryEnhancement?.intent && (
-                          <div><strong>Arama Amacı:</strong> {queryEnhancement.intent}</div>
+                        {queryEnhancement && (queryEnhancement as any).intent && (
+                          <div><strong>Arama Amacı:</strong> {(queryEnhancement as any).intent}</div>
                         )}
                         <div><strong>Toplam Sonuç:</strong> {totalResults}</div>
                       </div>

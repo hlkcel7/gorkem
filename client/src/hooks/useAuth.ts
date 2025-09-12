@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { googleSheetsClient } from "@/services/googleSheets";
 import { useEffect, useState } from "react";
 
 export function useAuth() {
@@ -36,8 +35,9 @@ export function useAuth() {
       if (auth) {
         await auth.signOut();
       }
-      // Also sign out from Google Sheets
-      await googleSheetsClient.signOut();
+      // Google Sheets client removed from client bundle; any server-side session
+      // should be cleared there if needed.
+      console.log('Signed out from Firebase. Google Sheets client deprecated on client.');
     } catch (err: any) {
       console.error('Sign out error:', err);
       setError(err.message);

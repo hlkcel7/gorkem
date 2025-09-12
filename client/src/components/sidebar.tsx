@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import CreateSheetModal from "./create-sheet-modal";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useSheets, useDeleteSheet } from "@/hooks/useSheets";
+// Google Sheets integration removed for Info Center migration
 import { apiRequest } from "@/lib/queryClient";
 import RenameSheetModal from "./rename-sheet-modal";
 
@@ -18,8 +18,7 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const { toast } = useToast();
 
-  const { data: sheets = [], isLoading } = useSheets();
-  const deleteSheetMutation = useDeleteSheet();
+  // sheets list removed; Info Center will use Supabase instead
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
     x: number;
@@ -37,22 +36,26 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
   };
 
   const handleDeleteSheet = (sheetTabId: number, sheetName: string) => {
-    if (confirm(`"${sheetName}" adlı sheet'i silmek istediğinizden emin misiniz?`)) {
-      deleteSheetMutation.mutate({ sheetTabId }, {
-        onSuccess: () => {
-          toast({
-            title: "Sheet Silindi",
-            description: "Sheet başarıyla silindi.",
-          });
-        },
-        onError: () => {
-          toast({
-            title: "Silme Hatası",
-            description: "Sheet silinirken bir hata oluştu.",
-            variant: "destructive",
-          });
-        },
-      });
+    // Client-side sheet deletion is deprecated; this is a safe no-op.
+    if (!confirm(`"${sheetName}" adlı sheet'i silmek istediğinizden emin misiniz?`)) return;
+    try {
+      // If a delete mutation exists, call it; otherwise show a toast explaining deprecation.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const maybeDelete: any = (globalThis as any).deleteSheetMutation;
+      if (maybeDelete && typeof maybeDelete.mutate === 'function') {
+        maybeDelete.mutate({ sheetTabId }, {
+          onSuccess: () => {
+            toast({ title: 'Sheet Silindi', description: 'Sheet başarıyla silindi.' });
+          },
+          onError: () => {
+            toast({ title: 'Silme Hatası', description: 'Sheet silinirken bir hata oluştu.', variant: 'destructive' });
+          }
+        });
+      } else {
+        toast({ title: 'İşlem Desteklenmiyor', description: 'Client-side sheet silme artık desteklenmiyor.' });
+      }
+    } catch (err) {
+      toast({ title: 'Hata', description: 'Sheet silme sırasında bir hata oluştu.', variant: 'destructive' });
     }
   };
 
@@ -128,73 +131,27 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
           🔍 Belge Arama
         </button>
         
-        {/* Google Sheets List */}
+        {/* Info Center link (replaces Google Sheets list) */}
         <div className="mt-6">
           <h3 className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Google Sheets
+            Projeler
           </h3>
-          <div className="mt-2 space-y-1">
-            {isLoading ? (
-              <div className="space-y-2">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="px-3 py-2 animate-pulse">
-                    <div className="h-4 bg-muted rounded w-3/4"></div>
-                  </div>
-                ))}
-              </div>
-            ) : sheets.length === 0 ? (
-              <div className="px-3 py-4 text-center">
-                <p className="text-sm text-muted-foreground mb-2">Henüz sheet yok</p>
-                <p className="text-xs text-muted-foreground">İlk sheet'inizi oluşturun</p>
-              </div>
-            ) : (
-              sheets.map((sheet) => (
-                <div
-                  key={sheet.id}
-                  className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                    location === `/sheets/${sheet.id}`
-                      ? "bg-primary text-primary-foreground"
-                      : "text-foreground hover:bg-accent hover:text-accent-foreground"
-                  }`}
-                >
-                  <button
-                    onClick={() => handleNavigation(`/sheets/${sheet.id}`)}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      setContextMenu({ visible: true, x: e.clientX, y: e.clientY, sheetId: sheet.id, sheetName: sheet.name });
-                    }}
-                    className="flex items-center flex-1 text-left"
-                    data-testid={`nav-sheet-${sheet.id}`}
-                  >
-                    <i className="fas fa-table mr-3 h-4 w-4 text-muted-foreground"></i>
-                    <span className="truncate">{sheet.name}</span>
-                  </button>
-                  <div className="ml-auto flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteSheet(sheet.sheetTabId, sheet.name);
-                      }}
-                      className="p-1 hover:bg-destructive hover:text-destructive-foreground rounded"
-                      data-testid={`button-delete-sheet-${sheet.id}`}
-                    >
-                      <i className="fas fa-trash h-3 w-3"></i>
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
+          <div className="mt-2">
+            <div
+              className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                location === "/projects/info-center" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-accent hover:text-accent-foreground"
+              }`}
+            >
+              <button
+                onClick={() => handleNavigation('/projects/info-center')}
+                className="flex items-center flex-1 text-left"
+                data-testid={`nav-info-center`}
+              >
+                <i className="fas fa-info-circle mr-3 h-4 w-4 text-muted-foreground"></i>
+                <span className="truncate">INFO CENTER</span>
+              </button>
+            </div>
           </div>
-          
-          <Button
-            onClick={() => setShowCreateModal(true)}
-            variant="outline"
-            className="mt-3 w-full border-dashed"
-            data-testid="button-create-sheet"
-          >
-            <i className="fas fa-plus mr-2 h-4 w-4"></i>
-            Yeni Sheet Oluştur
-          </Button>
         </div>
       </nav>
 
@@ -234,12 +191,19 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
           >
             Yeniden Adlandır
           </button>
-          <button
+                <button
             className="block w-full text-left px-3 py-1 hover:bg-destructive rounded"
             onClick={() => {
-              if (contextMenu.sheetId) {
-                const s = sheets.find(s => s.id === contextMenu.sheetId);
-                if (s) handleDeleteSheet(s.sheetTabId, s.name);
+              try {
+                // sheets may not exist in the client anymore; attempt to access safely
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const maybeSheets: any[] = (globalThis as any).sheets || [];
+                if (contextMenu.sheetId) {
+                  const s = maybeSheets.find(s => s.id === contextMenu.sheetId);
+                  if (s) handleDeleteSheet(s.sheetTabId, s.name);
+                }
+              } catch (err) {
+                // ignore
               }
               setContextMenu({ ...contextMenu, visible: false });
             }}

@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useUpdateRecord, useAddRecord } from "@/hooks/useSheets";
 import { Plus, Save, RefreshCw } from "lucide-react";
-import { googleSheetsClient } from "@/services/googleSheets";
 
 interface SheetTableProps {
   headers: string[];
@@ -40,96 +39,25 @@ export function SheetTable({ headers, records, sheetName, sheetTabId, onDataChan
     return result;
   };
 
-  // Initialize sheet data from records and Google Sheets
+  // Initialize sheet data from provided records (Google Sheets removed)
   useEffect(() => {
-    const loadGoogleSheetsData = async () => {
-      try {
-        console.log('Loading data from Google Sheets for:', sheetName);
-        const googleData = await googleSheetsClient.getSheetData(
-          window.__APP_CONFIG__.GOOGLE_SPREADSHEET_ID,
-          sheetName
-        );
-        
-        console.log('Google Sheets data:', googleData);
-        
-        // Convert Google Sheets data to our format
-        const data: string[][] = [];
-        for (let row = 0; row < minRows; row++) {
-          const rowData: string[] = [];
-          for (let col = 0; col < minCols; col++) {
-            if (googleData[row] && googleData[row][col]) {
-              rowData[col] = String(googleData[row][col]);
-            } else {
-              rowData[col] = '';
-            }
-          }
-          data[row] = rowData;
+    const data: string[][] = [];
+    for (let row = 0; row < minRows; row++) {
+      const rowData: string[] = [];
+      for (let col = 0; col < minCols; col++) {
+        if (row < records.length && col < headers.length) {
+          const header = headers[col];
+          rowData[col] = records[row]?.[header] || '';
+        } else {
+          rowData[col] = '';
         }
-        setSheetData(data);
-        console.log('Sheet data loaded from Google Sheets');
-        
-      } catch (error) {
-        console.warn('Could not load from Google Sheets, using local data:', error);
-        
-        // Fallback to local records if Google Sheets fails
-        const data: string[][] = [];
-        for (let row = 0; row < minRows; row++) {
-          const rowData: string[] = [];
-          for (let col = 0; col < minCols; col++) {
-            if (row < records.length && col < headers.length) {
-              const header = headers[col];
-              rowData[col] = records[row][header] || '';
-            } else {
-              rowData[col] = '';
-            }
-          }
-          data[row] = rowData;
-        }
-        setSheetData(data);
       }
-    };
-
-    if (sheetName && window.__APP_CONFIG__?.GOOGLE_SPREADSHEET_ID) {
-      loadGoogleSheetsData();
+      data[row] = rowData;
     }
-  }, [sheetName, minRows, minCols]); // Remove records and headers dependency to avoid conflicts
+    setSheetData(data);
+  }, [records, headers, minRows, minCols]);
 
-  // Auto-refresh from Google Sheets every 30 seconds when editing is not active
-  useEffect(() => {
-    if (!sheetName || !window.__APP_CONFIG__?.GOOGLE_SPREADSHEET_ID || editingCell) return;
-    
-    const refreshInterval = setInterval(async () => {
-      if (!hasUnsavedChanges && !editingCell) {
-        try {
-          console.log('Auto-refreshing from Google Sheets...');
-          const googleData = await googleSheetsClient.getSheetData(
-            window.__APP_CONFIG__.GOOGLE_SPREADSHEET_ID,
-            sheetName
-          );
-          
-          // Convert Google Sheets data to our format
-          const data: string[][] = [];
-          for (let row = 0; row < minRows; row++) {
-            const rowData: string[] = [];
-            for (let col = 0; col < minCols; col++) {
-              if (googleData[row] && googleData[row][col]) {
-                rowData[col] = String(googleData[row][col]);
-              } else {
-                rowData[col] = '';
-              }
-            }
-            data[row] = rowData;
-          }
-          setSheetData(data);
-          
-        } catch (error) {
-          console.warn('Auto-refresh failed:', error);
-        }
-      }
-    }, 30000); // 30 seconds
-
-    return () => clearInterval(refreshInterval);
-  }, [sheetName, minRows, minCols, hasUnsavedChanges, editingCell]);
+  // Auto-refresh removed (Google Sheets sync deprecated)
 
   const handleCellClick = (row: number, col: number) => {
     setSelectedCell({ row, col });
@@ -150,82 +78,15 @@ export function SheetTable({ headers, records, sheetName, sheetTabId, onDataChan
   };
 
   const refreshFromGoogleSheets = async () => {
-    try {
-      console.log('Manual refresh from Google Sheets...');
-      const googleData = await googleSheetsClient.getSheetData(
-        window.__APP_CONFIG__.GOOGLE_SPREADSHEET_ID,
-        sheetName
-      );
-      
-      // Convert Google Sheets data to our format
-      const data: string[][] = [];
-      for (let row = 0; row < minRows; row++) {
-        const rowData: string[] = [];
-        for (let col = 0; col < minCols; col++) {
-          if (googleData[row] && googleData[row][col]) {
-            rowData[col] = String(googleData[row][col]);
-          } else {
-            rowData[col] = '';
-          }
-        }
-        data[row] = rowData;
-      }
-      setSheetData(data);
-      setHasUnsavedChanges(false); // Reset unsaved changes after refresh
-      
-      toast({
-        title: "Yenilendi",
-        description: "Google Sheets'ten güncel veriler alındı",
-      });
-      
-    } catch (error: any) {
-      console.error('Manual refresh failed:', error);
-      toast({
-        title: "Yenileme Hatası",
-        description: "Google Sheets'ten veri alınamadı: " + (error?.message || 'Bilinmeyen hata'),
-        variant: "destructive",
-      });
-    }
+    toast({ title: 'Devre Dışı', description: 'Google Sheets senkronizasyonu client tarafında kaldırıldı.', variant: 'destructive' });
   };
 
   const saveToGoogleSheets = async () => {
-    try {
-      // Convert sheet data to Google Sheets format
-      const values = sheetData.map(row => 
-        row ? row.map(cell => cell !== null && cell !== undefined ? String(cell) : '') : 
-        Array(minCols).fill('')
-      );
-      
-      console.log('Saving to Google Sheets:', {
-        sheetName,
-        spreadsheetId: window.__APP_CONFIG__.GOOGLE_SPREADSHEET_ID,
-        range: `${sheetName}!A1:${getColumnLetter(minCols - 1)}${minRows}`,
-        valuesPreview: values.slice(0, 3)
-      });
-      
-      // Update the sheet with all data
-      await googleSheetsClient.updateSheetData(
-        window.__APP_CONFIG__.GOOGLE_SPREADSHEET_ID,
-        `${sheetName}!A1:${getColumnLetter(minCols - 1)}${minRows}`,
-        values
-      );
-      
-      setHasUnsavedChanges(false);
-      toast({
-        title: "Başarılı",
-        description: "Veriler Google Sheets'e kaydedildi",
-      });
-      
-      // Refresh data
-      onDataChange();
-    } catch (error: any) {
-      console.error('Save to Google Sheets failed:', error);
-      toast({
-        title: "Hata",
-        description: "Google Sheets'e kaydedilemedi: " + (error?.message || 'Bilinmeyen hata'),
-        variant: "destructive",
-      });
-    }
+    // Saving to Google Sheets is deprecated in client. Consider server-side migration.
+    console.warn('Save to Google Sheets attempted from client; operation skipped.');
+    toast({ title: 'Devre Dışı', description: 'Google Sheets kaydetme client tarafında devre dışı bırakıldı.', variant: 'destructive' });
+    setHasUnsavedChanges(false);
+    onDataChange();
   };
 
   const handleKeyPress = (e: React.KeyboardEvent, row: number, col: number) => {
@@ -307,12 +168,6 @@ export function SheetTable({ headers, records, sheetName, sheetTabId, onDataChan
           newSheetData[row][col] = '';
           setSheetData(newSheetData);
           setHasUnsavedChanges(true);
-          return;
-        }
-        if (e.key.length === 1) {
-          setEditingCell({ row, col });
-          setCellValue(e.key);
-          e.preventDefault();
           return;
         }
         return;

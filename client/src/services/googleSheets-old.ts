@@ -4,10 +4,7 @@
 declare global {
   interface Window {
     gapi: any;
-    __APP_CONFIG__: {
-      GOOGLE_CLIENT_ID: string;
-      GOOGLE_PROJECT_ID: string;
-    };
+    __APP_CONFIG__: any;
   }
 }
 
@@ -150,7 +147,7 @@ export class ClientGoogleSheetsService {
       return result;
     } catch (error) {
       console.error('Error getting spreadsheet info:', error);
-      throw new Error('Spreadsheet bilgileri alınamadı: ' + (error.message || 'Bilinmeyen hata'));
+  throw new Error('Spreadsheet bilgileri alınamadı: ' + ((error as any)?.message || 'Bilinmeyen hata'));
     }
   }
 

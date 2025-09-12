@@ -5,7 +5,6 @@ import { SheetTable } from "@/components/sheet-table";
 import { useSheets, useSheetData } from "@/hooks/useSheets";
 import { RefreshCw, Save, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { googleSheetsClient } from "@/services/googleSheets";
 
 export default function SheetView() {
   const { id } = useParams();
@@ -13,40 +12,39 @@ export default function SheetView() {
   
   // Get sheets to find the sheet name by id
   const { data: sheets } = useSheets();
-  const sheet = sheets?.find(s => s.id === id);
+  const sheet = sheets?.find((s: any) => s.id === id);
   
   // Get sheet data using sheet name
   const { data: sheetData, isLoading, error, refetch } = useSheetData(sheet?.name || '');
 
-  const handleSaveToGoogleSheets = async () => {
+  const handleRefetch = async () => {
     try {
-      // Bu fonksiyon SheetTable component'inde zaten mevcut
-      // Kullanıcı tabloyu düzenleyince otomatik olarak kaydediliyor
-      toast({
-        title: "Başarılı",
-        description: "Veriler Google Sheets'e kaydedildi",
-      });
-    } catch (error) {
-      toast({
-        title: "Hata",
-        description: "Google Sheets'e kaydetme sırasında hata oluştu",
-        variant: "destructive",
-      });
+      await refetch();
+    } catch (e) {
+      console.warn('Refetch failed', e);
     }
+  };
+
+  const handleSaveToGoogleSheets = async () => {
+    toast({
+      title: 'Deprecated',
+      description: "Google Sheets kaydetme istemcisi client'ta devre dışı bırakıldı. Lütfen admin ayarlarını kullanın.",
+      variant: 'destructive'
+    });
   };
 
   const handleExcelDownload = () => {
     if (!sheetData || !transformedData) return;
 
     // CSV formatında indir
-    const headers = sheetData.headers;
-    const records = transformedData.records;
+    const headers = sheetData.headers || [];
+    const records = transformedData.records || [];
     
     let csvContent = "\uFEFF"; // UTF-8 BOM
     csvContent += headers.join(",") + "\n";
     
-    records.forEach(record => {
-      const row = headers.map(header => {
+    records.forEach((record: any) => {
+      const row = headers.map((header: any) => {
         const value = record[header] || "";
         // CSV için özel karakterleri escape et
         return `"${String(value).replace(/"/g, '""')}"`;
@@ -139,7 +137,7 @@ export default function SheetView() {
       <div className="flex items-center justify-end gap-3">
         <Button
           variant="outline"
-          onClick={refetch}
+          onClick={handleRefetch}
           disabled={isLoading}
           className="text-foreground hover:bg-primary/5"
         >
@@ -169,7 +167,7 @@ export default function SheetView() {
       </div>
 
       {/* Data Table */}
-      {sheetData.headers.length === 0 ? (
+        {(!sheetData || (sheetData.headers || []).length === 0) ? (
         <Card>
           <div className="p-6 text-center">
             <div className="text-muted-foreground mb-4">
@@ -183,8 +181,8 @@ export default function SheetView() {
         <SheetTable
           headers={sheetData.headers}
           records={transformedData.records}
-          sheetName={sheet.name}
-          sheetTabId={sheet.sheetTabId}
+          sheetName={sheet?.name || ''}
+          sheetTabId={sheet?.sheetTabId || 0}
           onDataChange={() => refetch()}
         />
       )}

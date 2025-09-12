@@ -20,7 +20,7 @@ import {
   TrendingUp,
   Plus
 } from 'lucide-react';
-import { googleSheetsClient } from '../services/googleSheets';
+// Google Sheets integration removed: projects will no longer auto-fetch from Google Sheets
 
 // Proje veri yapısı - Google Sheets'teki tüm kolonlara göre
 interface ProjectData {
@@ -53,194 +53,17 @@ interface ProjectData {
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<ProjectData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [activeProject, setActiveProject] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  // Proje verilerini Google Sheets'ten çek
-  // Google Sheets kolon eşleme fonksiyonu
-  const createColumnMapping = (headers: string[]) => {
-    const mapping: { [key: string]: number } = {};
-    
-    // Header normalleştirme - Türkçe karakterler ve boşluklar
-    const normalizeHeader = (header: string) => {
-      return header
-        .replace(/İ/g, 'i').replace(/I/g, 'i')  // Önce büyük harfleri değiştir
-        .replace(/Ğ/g, 'g').replace(/Ü/g, 'u').replace(/Ş/g, 's')
-        .replace(/Ö/g, 'o').replace(/Ç/g, 'c')
-        .toLowerCase()  // Sonra toLowerCase
-        .replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's')
-        .replace(/ı/g, 'i').replace(/ö/g, 'o').replace(/ç/g, 'c')
-        .replace(/\s+/g, ' ').trim();
-    };
-
-    headers.forEach((header, index) => {
-      const normalized = normalizeHeader(header);
-      
-      // Mapping'i oluştur
-      if (normalized.includes('proje adi') || normalized === 'proje adı') {
-        mapping['proje_adi'] = index;
-      } else if (normalized.includes('proje kodu')) {
-        mapping['proje_kodu'] = index;
-      } else if (normalized.includes('proje turu') || normalized.includes('proje türü')) {
-        mapping['proje_turu'] = index;
-      } else if (normalized.includes('lokasyon')) {
-        mapping['lokasyon'] = index;
-      } else if (normalized.includes('isveren') || normalized.includes('işveren')) {
-        mapping['isveren'] = index;
-      } else if (normalized.includes('yuklenici') || normalized.includes('yüklenici')) {
-        mapping['yuklenici'] = index;
-      } else if (normalized.includes('musavir') || normalized.includes('müşavir')) {
-        mapping['musavir'] = index;
-      } else if (normalized.includes('sozlesme bedeli') || normalized.includes('sözleşme bedeli')) {
-        mapping['sozlesme_bedeli'] = index;
-      } else if (normalized.includes('avans') && normalized.includes('miktar')) {
-        mapping['avans_miktari'] = index;
-      } else if (normalized.includes('alinan') && normalized.includes('hakedis')) {
-        mapping['alinan_hakedisler'] = index;
-      } else if (normalized.includes('yapilan') && normalized.includes('harcama')) {
-        mapping['yapilan_harcamalar'] = index;
-      } else if (normalized.includes('cari durum')) {
-        mapping['cari_durum'] = index;
-      } else if (normalized.includes('gecici teminat')) {
-        mapping['gecici_teminat'] = index;
-      } else if (normalized.includes('kesin teminat')) {
-        mapping['kesin_teminat'] = index;
-      } else if (normalized.includes('finansman kaynak')) {
-        mapping['finansman_kaynagi'] = index;
-      } else if (normalized.includes('arsa alan')) {
-        mapping['arsa_alani'] = index;
-      } else if (normalized.includes('toplam insaat alan')) {
-        mapping['toplam_insaat_alani'] = index;
-      } else if (normalized.includes('isin suresi') || normalized.includes('işin süresi')) {
-        mapping['isin_suresi'] = index;
-      } else if (normalized.includes('baslangic') && normalized.includes('tarih')) {
-        mapping['sozlesmeye_gore_baslangic'] = index;
-      } else if (normalized.includes('bitis') && normalized.includes('tarih') && !normalized.includes('fiili')) {
-        mapping['sozlesmeye_gore_bitis'] = index;
-      } else if (normalized.includes('sure uzat') || normalized.includes('süre uzat')) {
-        mapping['sure_uzatimi'] = index;
-      } else if (normalized.includes('devam durum')) {
-        mapping['devam_durumu'] = index;
-      } else if (normalized.includes('fiili') && normalized.includes('bitis')) {
-        mapping['fiili_bitis_tarihi'] = index;
-      } else if (normalized.includes('gecici kabul')) {
-        mapping['gecici_kabul_durumu'] = index;
-      } else if (normalized.includes('kesin kabul')) {
-        mapping['kesin_kabul_durumu'] = index;
-      }
-    });
-
-    return mapping;
+  // Placeholder for legacy refresh button - actual data lives elsewhere
+  const loadProjectData = () => {
+    console.log('loadProjectData called - no-op in migrated client');
   };
 
-  const loadProjectData = async () => {
-    try {
-      setLoading(true);
-      console.log('🏗️ Projeler Dashboard: Google Sheets\'ten proje verileri çekiliyor...');
-
-      // "Projeler" sheet'ini ara
-      const spreadsheetInfo = await googleSheetsClient.getSpreadsheetInfo(
-        window.__APP_CONFIG__.GOOGLE_SPREADSHEET_ID
-      );
-
-      const projectSheet = spreadsheetInfo.sheets.find(sheet => 
-        sheet.title.toLowerCase().includes('proje') || 
-        sheet.title.toLowerCase() === 'projeler'
-      );
-
-      if (!projectSheet) {
-        console.warn('⚠️ "Projeler" sheet\'i bulunamadı');
-        setProjects([]);
-        return;
-      }
-
-      console.log(`📋 "${projectSheet.title}" sheet\'i bulundu`);
-
-      const sheetData = await googleSheetsClient.getSheetData(
-        window.__APP_CONFIG__.GOOGLE_SPREADSHEET_ID,
-        projectSheet.title
-      );
-
-      if (!sheetData || sheetData.length <= 1) {
-        console.log('📋 Projeler sheet\'inde veri yok');
-        setProjects([]);
-        return;
-      }
-
-      console.log(`📊 Sheets\'ten ${sheetData.length - 1} satır veri geldi`);
-
-      // Headers'ı kontrol et ve mapping oluştur
-      const headers = sheetData[0];
-      console.log('📋 Sheet Headers:', headers);
-      
-      const columnMapping = createColumnMapping(headers);
-      console.log('🗺️ Column Mapping:', columnMapping);
-
-      // Veriyi parse et - Dinamik mapping kullanarak
-      const projectsData: ProjectData[] = [];
-
-      for (let i = 1; i < sheetData.length; i++) {
-        const row = sheetData[i];
-        if (!row || row.length === 0 || !row[columnMapping['proje_adi'] || 0]) continue; // Boş satırları geç
-
-        const getCell = (fieldName: string, fallback: string = '') => {
-          const index = columnMapping[fieldName];
-          return (index !== undefined && row[index]) ? String(row[index]).trim() : fallback;
-        };
-
-        const project: ProjectData = {
-          proje_adi: getCell('proje_adi', 'İsimsiz Proje'),
-          proje_kodu: getCell('proje_kodu', `PROJE-${i}`),
-          proje_turu: getCell('proje_turu', 'Belirtilmemiş'),
-          lokasyon: getCell('lokasyon', 'Belirtilmemiş'),
-          isveren: getCell('isveren', 'Belirtilmemiş'),
-          yuklenici: getCell('yuklenici', 'Belirtilmemiş'),
-          musavir: getCell('musavir', ''),
-          sozlesme_bedeli: getCell('sozlesme_bedeli', ''),
-          avans_miktari: getCell('avans_miktari', ''),
-          alinan_hakedisler: getCell('alinan_hakedisler', ''),
-          yapilan_harcamalar: getCell('yapilan_harcamalar', ''),
-          cari_durum: getCell('cari_durum', ''),
-          gecici_teminat: getCell('gecici_teminat', ''),
-          kesin_teminat: getCell('kesin_teminat', ''),
-          finansman_kaynagi: getCell('finansman_kaynagi', ''),
-          arsa_alani: getCell('arsa_alani', ''),
-          toplam_insaat_alani: getCell('toplam_insaat_alani', ''),
-          sozlesmeye_gore_baslangic: getCell('sozlesmeye_gore_baslangic', ''),
-          sozlesmeye_gore_bitis: getCell('sozlesmeye_gore_bitis', ''),
-          isin_suresi: getCell('isin_suresi', ''),
-          sure_uzatimi: getCell('sure_uzatimi', ''),
-          devam_durumu: getCell('devam_durumu', 'Belirtilmemiş'),
-          fiili_bitis_tarihi: getCell('fiili_bitis_tarihi', ''),
-          gecici_kabul_durumu: getCell('gecici_kabul_durumu', 'Belirtilmemiş'),
-          kesin_kabul_durumu: getCell('kesin_kabul_durumu', 'Belirtilmemiş')
-        };
-
-        projectsData.push(project);
-      }
-
-      console.log(`🏗️ ${projectsData.length} proje parse edildi:`, projectsData.map(p => p.proje_kodu));
-      setProjects(projectsData);
-      
-      // İlk projeyi aktif yap
-      if (projectsData.length > 0) {
-        setActiveProject(projectsData[0].proje_kodu);
-      }
-      
-      setLastUpdated(new Date());
-
-    } catch (error) {
-      console.error('❌ Proje verileri yüklenemedi:', error);
-      setProjects([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadProjectData();
-  }, []);
+  // NOTE: Google Sheets fetching has been removed as per migration to Info Center (Supabase).
+  // Projects can be seeded manually or migrated to another data source.
 
   // Proje durumuna göre renk
   const getStatusColor = (status: string): string => {

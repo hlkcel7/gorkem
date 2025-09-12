@@ -108,7 +108,9 @@ export function performSecurityCheck() {
 
 // Browser'da kullanım için global fonksiyonlar
 if (typeof window !== 'undefined') {
-  window.cleanSensitiveDataFromLocalStorage = cleanSensitiveDataFromLocalStorage;
-  window.secureLogout = secureLogout;
-  window.performSecurityCheck = performSecurityCheck;
+  // Assign to window with an any-cast to avoid TypeScript complaints about
+  // custom globals. These are convenience helpers for dev/debugging.
+  (window as any).cleanSensitiveDataFromLocalStorage = cleanSensitiveDataFromLocalStorage;
+  (window as any).secureLogout = secureLogout;
+  (window as any).performSecurityCheck = performSecurityCheck;
 }

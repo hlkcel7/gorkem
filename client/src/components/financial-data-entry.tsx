@@ -106,15 +106,13 @@ export function FinancialDataEntry() {
         gelirForm.alt_kategori || ''
       ];
 
-      await googleSheetsClient.appendSheetData(
-        window.__APP_CONFIG__.GOOGLE_SPREADSHEET_ID,
-        'Gelirler',
-        [rowData]
-      );
-
+      // Client-side Google Sheets append is deprecated.
+      // Replace with Supabase server-side write or other backend integration.
+      console.warn('Attempted to append to Google Sheets from client; operation skipped.');
       toast({
-        title: "Başarılı",
-        description: "Gelir kaydı eklendi",
+        title: "Devre Dışı",
+        description: "Gelir kaydı client'tan doğrudan Google Sheets'e eklenemez. Lütfen yönetici ile iletişime geçin.",
+        variant: 'destructive'
       });
 
       // Formu resetle
@@ -166,15 +164,11 @@ export function FinancialDataEntry() {
         ''  // fatura_no
       ];
 
-      await googleSheetsClient.appendSheetData(
-        window.__APP_CONFIG__.GOOGLE_SPREADSHEET_ID,
-        'Giderler',
-        [rowData]
-      );
-
+      console.warn('Attempted to append to Google Sheets from client; operation skipped.');
       toast({
-        title: "Başarılı",
-        description: "Gider kaydı eklendi",
+        title: "Devre Dışı",
+        description: "Gider kaydı client'tan doğrudan Google Sheets'e eklenemez. Lütfen yönetici ile iletişime geçin.",
+        variant: 'destructive'
       });
 
       // Formu resetle

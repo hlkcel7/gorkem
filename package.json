@@ -13,6 +13,8 @@
     "dist:quick": "node scripts/quick-dist-zip.cjs",
     "dist:download": "node scripts/download-dist.cjs",
     "dist:fast": "node scripts/quick-download.cjs",
+    "backup:fullstack": "node scripts/create-fullstack-backup.cjs",
+    "backup:complete": "node scripts/complete-workspace-backup.cjs",
     "package": "npm run build && npm run dist:zip"
   },
   "dependencies": {
@@ -77,6 +79,8 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-local": "^1.0.0",
+    "primeicons": "^7.0.0",
+    "primereact": "^10.9.7",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",

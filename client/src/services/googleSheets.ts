@@ -1,3 +1,61 @@
+// Deprecated client-side Google Sheets stub
+// The real Google Sheets integration has been removed from the client
+// and replaced by Supabase-based Info Center. This stub keeps the
+// same exported symbol so imports don't break, but methods are no-ops
+// or throw informative errors.
+
+class ClientGoogleSheetsServiceStub {
+  async initialize() {
+    console.warn('googleSheetsClient.initialize() called, but Google Sheets client is deprecated in client code.');
+  }
+
+  async signIn() {
+    throw new Error('Google Sheets sign-in is deprecated in this client. Use server-side or remove calls.');
+  }
+
+  async signOut() {
+    console.warn('googleSheetsClient.signOut() called on deprecated stub.');
+  }
+
+  isAuthenticated() {
+    return false;
+  }
+
+  async getSpreadsheetInfo(_id: string) {
+    return { title: 'deprecated', sheets: [] };
+  }
+
+  async getSheetData(_spreadsheetId: string, _sheetName: string) {
+    return [] as any[][];
+  }
+
+  async appendSheetData(..._args: any[]): Promise<void> {
+    // accept any args but remain a no-op for client
+    return Promise.resolve();
+  }
+
+  async updateSheetData(..._args: any[]): Promise<void> {
+    return Promise.resolve();
+  }
+
+  async createSheet(..._args: any[]): Promise<void> {
+    return Promise.resolve();
+  }
+
+  async deleteSheet(..._args: any[]): Promise<void> {
+    return Promise.resolve();
+  }
+
+  async renameSheet(..._args: any[]): Promise<void> {
+    return Promise.resolve();
+  }
+
+  getTemplateHeaders(_template: string) {
+    return ['Kolon 1', 'Kolon 2'];
+  }
+}
+
+export const googleSheetsClient = new ClientGoogleSheetsServiceStub();
 // Client-side Google Sheets API service using Google Identity Services (GIS)
 // Updated for new Google Identity Services to replace deprecated GAPI Auth2
 
@@ -186,10 +244,12 @@ export class ClientGoogleSheetsService {
             }
             
             this.accessToken = tokenResponse.access_token;
-            
-            // Save token to localStorage with expiry
+
+            // Save token to localStorage with expiry (only if we have a token)
             const expiresIn = tokenResponse.expires_in || 3600;
-            this.saveToken(this.accessToken, expiresIn);
+            if (this.accessToken) {
+              this.saveToken(this.accessToken, expiresIn);
+            }
             
             console.log('Successfully authenticated with GIS');
             
@@ -455,4 +515,11 @@ export class ClientGoogleSheetsService {
   }
 }
 
-export const googleSheetsClient = new ClientGoogleSheetsService();
+// The client-side Google Sheets implementation is intentionally not exported
+// alongside the stub to avoid duplicate symbol declarations. The stub above
+// (`googleSheetsClient`) should be used by client code. If server-side or
+// full GIS-based client is required, import the implementation from the
+// legacy files explicitly (not exported here to keep types clean).
+
+// NOTE: Do NOT export a second `googleSheetsClient` here. The stub at the top
+// of this file provides the single exported symbol for client usage.

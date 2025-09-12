@@ -8,6 +8,7 @@ import SheetView from "@/pages/sheet-view";
 import { FinancialPage } from "@/pages/financial";
 import ProjectsPage from "@/pages/projects";
 import DocumentSearchPage from "@/pages/document-search";
+import InfoCenterPage from "@/pages/info-center";
 import Login from "@/pages/login";
 import Sidebar from "@/components/sidebar";
 import LoadingOverlay from "@/components/loading-overlay";
@@ -16,6 +17,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserSettings } from "@/hooks/useUserSettings";
 import { useDocumentSearch } from "@/hooks/useDocumentSearch";
+import { DEV_SUPABASE_CONFIG } from "@/dev-supabase-config";
 import { Button } from "@/components/ui/button";
 
 function Router() {
@@ -23,6 +25,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/projects" component={ProjectsPage} />
+      <Route path="/projects/info-center" component={InfoCenterPage} />
       <Route path="/financial" component={FinancialPage} />
       <Route path="/document-search" component={DocumentSearchPage} />
       <Route path="/sheets/:id" component={SheetView} />
@@ -65,6 +68,20 @@ function AuthenticatedApp() {
         console.log('✅ Global: Servisler başarıyla otomatik konfigüre edildi');
       } catch (error) {
         console.error('❌ Global: Otomatik servis konfigürasyonu başarısız:', error);
+      }
+    }
+  }, [config, configureServices]);
+
+  // Development-only: if no UI config provided but a dev config exists, configure services
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'production') return;
+    // If user settings config doesn't include supabase, but we have a dev config, apply it
+    if ((!config || !config.supabase) && DEV_SUPABASE_CONFIG.url && DEV_SUPABASE_CONFIG.anonKey) {
+      try {
+        console.log('🔧 Dev: Applying local Supabase test config from dev-supabase-config.ts');
+        configureServices({ supabase: { url: DEV_SUPABASE_CONFIG.url, anonKey: DEV_SUPABASE_CONFIG.anonKey } });
+      } catch (err) {
+        console.error('❌ Dev: Failed to apply Supabase test config:', err);
       }
     }
   }, [config, configureServices]);
@@ -113,13 +130,13 @@ function AuthenticatedApp() {
             {user && (
               <div className="flex items-center space-x-2">
                 <img 
-                  src={user.picture || ''} 
-                  alt={user.name || ''} 
+                  src={(user as any)?.photoURL || (user as any)?.picture || ''} 
+                  alt={(user as any)?.displayName || (user as any)?.name || ''} 
                   className="w-8 h-8 rounded-full object-cover"
                   data-testid="img-user-avatar"
                 />
                 <span className="text-sm text-foreground" data-testid="text-user-name">
-                  {user.name}
+                  {(user as any)?.displayName || (user as any)?.name || 'Kullanıcı'}
                 </span>
                 <Button 
                   variant="outline" 

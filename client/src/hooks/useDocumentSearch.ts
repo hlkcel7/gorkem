@@ -207,7 +207,7 @@ export function useDocumentSearch() {
             textWeight,
             maxResults: 500,
             filters
-          }, { textScoreMethod });
+          }, { textScoreMethod: textScoreMethod as 'overlap' | 'simple' });
 
           searchMethod = 'hybrid';
           console.log(`✅ Hybrid search tamamlandı: ${finalResults.length} sonuç`);

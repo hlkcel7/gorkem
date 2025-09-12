@@ -84,7 +84,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-sm text-muted-foreground">Toplam Gelir</p>
                 <p className="text-2xl font-bold text-foreground" data-testid="text-total-income">
-                  {formatCurrency(dashboardData.totalIncome)}
+                  {formatCurrency(dashboardData.totalIncome ?? 0)}
                 </p>
                 <p className="text-xs text-green-600 mt-1">
                   <i className="fas fa-arrow-up mr-1"></i>
@@ -104,7 +104,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-sm text-muted-foreground">Toplam Gider</p>
                 <p className="text-2xl font-bold text-foreground" data-testid="text-total-expenses">
-                  {formatCurrency(dashboardData.totalExpenses)}
+                  {formatCurrency(dashboardData.totalExpenses ?? 0)}
                 </p>
                 <p className="text-xs text-red-600 mt-1">
                   <i className="fas fa-arrow-up mr-1"></i>
@@ -124,7 +124,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-sm text-muted-foreground">Net Kâr</p>
                 <p className="text-2xl font-bold text-foreground" data-testid="text-net-profit">
-                  {formatCurrency(dashboardData.netProfit)}
+                  {formatCurrency(dashboardData.netProfit ?? 0)}
                 </p>
                 <p className="text-xs text-green-600 mt-1">
                   <i className="fas fa-arrow-up mr-1"></i>
@@ -161,8 +161,8 @@ export default function Dashboard() {
 
       {/* Charts Section */}
       <DashboardCharts 
-        monthlyData={dashboardData.monthlyData}
-        expenseCategories={dashboardData.expenseCategories}
+  monthlyData={dashboardData.monthlyData ?? []}
+  expenseCategories={dashboardData.expenseCategories ?? []}
       />
 
       {/* Active Projects */}
@@ -177,7 +177,7 @@ export default function Dashboard() {
           </div>
         </div>
         <CardContent className="p-6">
-          {dashboardData.projects.length === 0 ? (
+          {(dashboardData.projects || []).length === 0 ? (
             <div className="text-center py-8">
               <div className="text-muted-foreground mb-4">
                 <i className="fas fa-building text-4xl"></i>
@@ -187,7 +187,7 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="space-y-4">
-              {dashboardData.projects.map((project) => (
+              {(dashboardData.projects || []).map((project: any) => (
                 <div key={project.id} className="flex items-center justify-between p-4 bg-muted rounded-lg" data-testid={`card-project-${project.id}`}>
                   <div className="flex-1">
                     <h4 className="font-medium text-foreground" data-testid={`text-project-name-${project.id}`}>

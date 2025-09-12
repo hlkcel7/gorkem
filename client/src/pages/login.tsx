@@ -24,26 +24,15 @@ export default function Login() {
       return;
     }
 
-    try {
-      // Sign in with Firebase
-      await signInWithEmailAndPassword(auth, email, password);
-      
       try {
-        // Google Sheets servisine login
-        console.log("Firebase kimlik doğrulama başarılı, Google Sheets kimlik doğrulama başlatılıyor...");
-        await googleSheetsClient.signIn();
-        console.log("Google Sheets kimlik doğrulama başarılı!");
-      } catch (sheetsErr: any) {
-        console.error("Google Sheets kimlik doğrulama hatası:", sheetsErr);
-        // Google Sheets kimlik doğrulama hatası durumunda ana sayfaya yönlendir
-        // Kullanıcı sonradan Google ile giriş yapabilir
+        // Sign in with Firebase
+        await signInWithEmailAndPassword(auth, email, password);
+
+        // NOTE: client-side Google Sheets login has been deprecated. If your
+        // deployment requires Google Sheets API access, perform authentication
+        // server-side or via an admin flow. Continue to dashboard.
         setLocation('/');
-        return;
-      }
-      
-      // Ana sayfaya yönlendir (wouter ile soft redirect)
-      setLocation('/');
-    } catch (err: any) {
+      } catch (err: any) {
       console.error("Firebase kimlik doğrulama hatası:", err);
       setError(err.message || "Giriş başarısız");
     } finally {
@@ -93,20 +82,8 @@ export default function Login() {
                 type="button" 
                 className="w-full" 
                 variant="outline"
-                onClick={async () => {
-                  try {
-                    setLoading(true);
-                    setError(null);
-                    console.log("Google Sheets kimlik doğrulama başlatılıyor...");
-                    await googleSheetsClient.signIn();
-                    console.log("Google Sheets kimlik doğrulama başarılı!");
-                    setLocation('/');
-                  } catch (err: any) {
-                    console.error("Google kimlik doğrulama hatası:", err);
-                    setError("Google erişimi başarısız: " + (err.message || err));
-                  } finally {
-                    setLoading(false);
-                  }
+                onClick={() => {
+                  setError('Google Sheets client-side authentication is deprecated. Use server-side configuration or skip this step.');
                 }}
                 disabled={loading}
               >

@@ -19,7 +19,9 @@ import {
   BarChart3,
   TrendingUp
 } from 'lucide-react';
-import { googleSheetsClient } from '../services/googleSheets';
+// Google Sheets integration removed from client. Project data should be
+// migrated to Supabase or another data source. This component keeps the
+// UI but no longer fetches from Google Sheets.
 
 // Proje veri yapısı
 interface ProjectData {
@@ -58,129 +60,18 @@ export function ProjectDashboard({ className }: ProjectDashboardProps) {
   const [activeProject, setActiveProject] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  // Proje verilerini Google Sheets'ten çek
-  const loadProjectData = async () => {
-    try {
-      setLoading(true);
-      console.log('🏗️ Project Dashboard: Proje verilerini yüklüyor...');
-
-      // Projeler tablosunu ara
-      const spreadsheetInfo = await googleSheetsClient.getSpreadsheetInfo(
-        window.__APP_CONFIG__.GOOGLE_SPREADSHEET_ID
-      );
-
-      const projectSheet = spreadsheetInfo.sheets.find(sheet => 
-        /(proje|project)/i.test(sheet.title.toLowerCase())
-      );
-
-      if (!projectSheet) {
-        console.warn('⚠️ Projeler tablosu bulunamadı');
-        setProjects([]);
-        return;
-      }
-
-      console.log(`📋 "${projectSheet.title}" tablosu bulundu`);
-
-      const sheetData = await googleSheetsClient.getSheetData(
-        window.__APP_CONFIG__.GOOGLE_SPREADSHEET_ID,
-        projectSheet.title
-      );
-
-      if (!sheetData || sheetData.length <= 1) {
-        console.log('📋 Projeler tablosunda veri yok');
-        setProjects([]);
-        return;
-      }
-
-      // Veriyi parse et
-      const headers = sheetData[0].map((h: string) => h?.toLowerCase().trim());
-      const projectsData: ProjectData[] = [];
-
-      for (let i = 1; i < sheetData.length; i++) {
-        const row = sheetData[i];
-        if (!row || row.length === 0) continue;
-
-        const project: any = {};
-        
-        // Kolonları map et
-        headers.forEach((header, index) => {
-          const value = row[index] || '';
-          
-          if (header.includes('proje adı') || header.includes('proje adi')) {
-            project.proje_adi = value;
-          } else if (header.includes('proje numarası') || header.includes('kodu')) {
-            project.proje_kodu = value;
-          } else if (header.includes('işveren') || header.includes('isveren')) {
-            project.isveren = value;
-          } else if (header.includes('yüklenici') || header.includes('yuklenici')) {
-            project.yuklenici_firma = value;
-          } else if (header.includes('müşavir') || header.includes('musavir')) {
-            project.musavir_firma = value;
-          } else if (header.includes('proje türü') || header.includes('turu')) {
-            project.proje_turu = value;
-          } else if (header.includes('lokasyon') || header.includes('adres')) {
-            project.lokasyon = value;
-          } else if (header.includes('arsa alanı')) {
-            project.arsa_alani = parseFloat(value.toString().replace(/[^0-9.]/g, '') || '0');
-          } else if (header.includes('brüt') && header.includes('inşaat')) {
-            project.insaat_alani_brut = parseFloat(value.toString().replace(/[^0-9.]/g, '') || '0');
-          } else if (header.includes('net') && header.includes('inşaat')) {
-            project.insaat_alani_net = parseFloat(value.toString().replace(/[^0-9.]/g, '') || '0');
-          } else if (header.includes('kat adedi')) {
-            project.kat_adedi = parseInt(value.toString().replace(/[^0-9]/g, '') || '0');
-          } else if (header.includes('başlangıç') || header.includes('baslangic')) {
-            project.baslangic_tarihi = value;
-          } else if (header.includes('bitiş') || header.includes('bitis')) {
-            project.bitis_tarihi = value;
-          } else if (header.includes('devam durumu')) {
-            project.devam_durumu = value;
-          } else if (header.includes('fiili bitiş')) {
-            project.fiili_bitis_tarihi = value;
-          } else if (header.includes('alt yüklenici')) {
-            project.alt_yukleniciler = value;
-          } else if (header.includes('maliyet')) {
-            project.yaklasik_maliyet = parseFloat(value.toString().replace(/[^0-9.]/g, '') || '0');
-          } else if (header.includes('kesin teminat')) {
-            project.kesin_teminat_yuzde = parseFloat(value.toString().replace(/[^0-9.]/g, '') || '0');
-          } else if (header.includes('geçici teminat')) {
-            project.gecici_teminat_yuzde = parseFloat(value.toString().replace(/[^0-9.]/g, '') || '0');
-          } else if (header.includes('finansman')) {
-            project.finansman_kaynaklari = value;
-          } else if (header.includes('geçici kabul')) {
-            project.gecici_kabul_durumu = value;
-          } else if (header.includes('kesin kabul')) {
-            project.kesin_kabul_durumu = value;
-          } else if (header.includes('as-built') || header.includes('as built')) {
-            project.as_built_durumu = value;
-          }
-        });
-
-        if (project.proje_adi && project.proje_kodu) {
-          projectsData.push(project as ProjectData);
-        }
-      }
-
-      console.log(`🏗️ ${projectsData.length} proje yüklendi:`, projectsData.map(p => p.proje_kodu));
-      setProjects(projectsData);
-      
-      // İlk projeyi aktif yap
-      if (projectsData.length > 0 && !activeProject) {
-        setActiveProject(projectsData[0].proje_kodu);
-      }
-      
-      setLastUpdated(new Date());
-
-    } catch (error) {
-      console.error('❌ Project loading failed:', error);
-      setProjects([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Google Sheets fetching removed. Projects should be provided via a
+  // proper data source (Supabase) or managed in application state.
   useEffect(() => {
-    loadProjectData();
+    setLoading(false);
+    setProjects([]);
   }, []);
+
+  // Legacy placeholder for refresh action - actual project loading is handled elsewhere (Supabase)
+  const loadProjectData = () => {
+    // no-op placeholder to satisfy existing UI buttons
+    console.log('loadProjectData called - client-side project loader deprecated.');
+  };
 
   // Proje durumuna göre renk belirleme
   const getStatusColor = (status: string): string => {

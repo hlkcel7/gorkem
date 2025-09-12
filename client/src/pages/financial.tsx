@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   Building
 } from 'lucide-react';
+import { FinancialDataEntry } from '@/components/financial-data-entry';
 
 export function FinancialPage() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -23,7 +24,7 @@ export function FinancialPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold flex items-center gap-2">
-                <Building2 className="h-8 w-8 text-blue-600" />
+                <Building className="h-8 w-8 text-blue-600" />
                 Görkem İnşaat
               </h1>
               <p className="text-muted-foreground">

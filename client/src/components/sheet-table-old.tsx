@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQueryClient, useMutation } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +15,7 @@ interface SheetTableProps {
   onDataChange: () => void;
 }
 
-export default function SheetTable({ headers, records, sheetId, onDataChange }: SheetTableProps) {
+export default function SheetTable({ headers, records, sheetName, onDataChange }: SheetTableProps) {
   const [editingCell, setEditingCell] = useState<{row: number, col: number} | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const recordsPerPage = 50;
@@ -22,7 +24,7 @@ export default function SheetTable({ headers, records, sheetId, onDataChange }: 
 
   const updateRecordMutation = useMutation({
     mutationFn: ({ rowIndex, data }: { rowIndex: number; data: any[] }) =>
-      apiRequest("PUT", `/api/sheets/${sheetId}/records/${rowIndex}`, { data }),
+      apiRequest("PUT", `/api/sheets/${sheetName}/records/${rowIndex}`, { data }),
     onSuccess: () => {
       onDataChange();
       toast({
@@ -98,7 +100,7 @@ export default function SheetTable({ headers, records, sheetId, onDataChange }: 
                   className="hover:bg-muted/50 transition-colors"
                   data-testid={`row-${startIndex + rowIndex}`}
                 >
-                  {record.map((cell, colIndex) => (
+                  {record.map((cell: any, colIndex: number) => (
                     <td 
                       key={colIndex}
                       className="px-6 py-4 text-sm text-foreground editable-cell"
@@ -125,7 +127,7 @@ export default function SheetTable({ headers, records, sheetId, onDataChange }: 
                             defaultValue={cell?.toString() || ''}
                             className="h-8 border-none shadow-none"
                             onKeyDown={(e) => handleKeyPress(e, startIndex + rowIndex, colIndex)}
-                            onBlur={(e) => handleCellEdit(startIndex + rowIndex, colIndex, e.target.value)}
+                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => handleCellEdit(startIndex + rowIndex, colIndex, e.target.value)}
                             autoFocus
                           />
                         )

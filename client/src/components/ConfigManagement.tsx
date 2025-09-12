@@ -29,26 +29,43 @@ export default function ConfigManagement() {
     apiBaseUrl: config?.server?.apiBaseUrl || 'http://gorkemprojetakip.com.tr'
   });
 
+  // Helper to ensure config objects never contain undefined fields (match the strict state type)
+  const normalizeFirebase = (partial?: Partial<UserConfig['firebase']>): UserConfig['firebase'] => ({
+    apiKey: partial?.apiKey ?? '',
+    authDomain: partial?.authDomain ?? '',
+    projectId: partial?.projectId ?? '',
+    appId: partial?.appId ?? '',
+    measurementId: partial?.measurementId ?? ''
+  });
+
+  const normalizeGoogleSheets = (partial?: Partial<UserConfig['googleSheets']>): UserConfig['googleSheets'] => ({
+    clientId: partial?.clientId ?? '',
+    projectId: partial?.projectId ?? '',
+    spreadsheetId: partial?.spreadsheetId ?? ''
+  });
+
+  const normalizeServer = (partial?: Partial<UserConfig['server']>): UserConfig['server'] => ({
+    apiBaseUrl: partial?.apiBaseUrl ?? 'http://gorkemprojetakip.com.tr'
+  });
+
   // Config güncellemelerini al
   useEffect(() => {
     if (config) {
-      setFirebaseConfig({
-        apiKey: config.firebase?.apiKey || '',
-        authDomain: config.firebase?.authDomain || '',
-        projectId: config.firebase?.projectId || '',
-        appId: config.firebase?.appId || '',
-        measurementId: config.firebase?.measurementId || ''
-      });
+      setFirebaseConfig(normalizeFirebase({
+        apiKey: config.firebase?.apiKey,
+        authDomain: config.firebase?.authDomain,
+        projectId: config.firebase?.projectId,
+        appId: config.firebase?.appId,
+        measurementId: config.firebase?.measurementId
+      }));
       
-      setGoogleSheetsConfig({
-        clientId: config.googleSheets?.clientId || '',
-        projectId: config.googleSheets?.projectId || '',
-        spreadsheetId: config.googleSheets?.spreadsheetId || ''
-      });
+      setGoogleSheetsConfig(normalizeGoogleSheets({
+        clientId: config.googleSheets?.clientId,
+        projectId: config.googleSheets?.projectId,
+        spreadsheetId: config.googleSheets?.spreadsheetId
+      }));
       
-      setServerConfig({
-        apiBaseUrl: config.server?.apiBaseUrl || 'http://gorkemprojetakip.com.tr'
-      });
+      setServerConfig(normalizeServer({ apiBaseUrl: config.server?.apiBaseUrl }));
     }
   }, [config]);
 
@@ -250,7 +267,7 @@ export default function ConfigManagement() {
                     type="password"
                     value={firebaseConfig?.apiKey || ''}
                     onChange={(e) => {
-                      setFirebaseConfig(prev => ({ ...prev, apiKey: e.target.value }));
+                      setFirebaseConfig(normalizeFirebase({ ...firebaseConfig, apiKey: e.target.value }));
                       triggerAutoSave('firebase');
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -266,7 +283,7 @@ export default function ConfigManagement() {
                     type="text"
                     value={firebaseConfig?.authDomain || ''}
                     onChange={(e) => {
-                      setFirebaseConfig(prev => ({ ...prev, authDomain: e.target.value }));
+                      setFirebaseConfig(normalizeFirebase({ ...firebaseConfig, authDomain: e.target.value }));
                       triggerAutoSave('firebase');
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -282,7 +299,7 @@ export default function ConfigManagement() {
                     type="text"
                     value={firebaseConfig?.projectId || ''}
                     onChange={(e) => {
-                      setFirebaseConfig(prev => ({ ...prev, projectId: e.target.value }));
+                      setFirebaseConfig(normalizeFirebase({ ...firebaseConfig, projectId: e.target.value }));
                       triggerAutoSave('firebase');
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -298,7 +315,7 @@ export default function ConfigManagement() {
                     type="text"
                     value={firebaseConfig?.appId || ''}
                     onChange={(e) => {
-                      setFirebaseConfig(prev => ({ ...prev, appId: e.target.value }));
+                      setFirebaseConfig(normalizeFirebase({ ...firebaseConfig, appId: e.target.value }));
                       triggerAutoSave('firebase');
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -314,7 +331,7 @@ export default function ConfigManagement() {
                     type="text"
                     value={firebaseConfig?.measurementId || ''}
                     onChange={(e) => {
-                      setFirebaseConfig(prev => ({ ...prev, measurementId: e.target.value }));
+                      setFirebaseConfig(normalizeFirebase({ ...firebaseConfig, measurementId: e.target.value }));
                       triggerAutoSave('firebase');
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -348,7 +365,7 @@ export default function ConfigManagement() {
                     type="text"
                     value={googleSheetsConfig?.clientId || ''}
                     onChange={(e) => {
-                      setGoogleSheetsConfig(prev => ({ ...prev, clientId: e.target.value }));
+                      setGoogleSheetsConfig(normalizeGoogleSheets({ ...googleSheetsConfig, clientId: e.target.value }));
                       triggerAutoSave('googleSheets');
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -364,7 +381,7 @@ export default function ConfigManagement() {
                     type="text"
                     value={googleSheetsConfig?.projectId || ''}
                     onChange={(e) => {
-                      setGoogleSheetsConfig(prev => ({ ...prev, projectId: e.target.value }));
+                      setGoogleSheetsConfig(normalizeGoogleSheets({ ...googleSheetsConfig, projectId: e.target.value }));
                       triggerAutoSave('googleSheets');
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -380,7 +397,7 @@ export default function ConfigManagement() {
                     type="text"
                     value={googleSheetsConfig?.spreadsheetId || ''}
                     onChange={(e) => {
-                      setGoogleSheetsConfig(prev => ({ ...prev, spreadsheetId: e.target.value }));
+                      setGoogleSheetsConfig(normalizeGoogleSheets({ ...googleSheetsConfig, spreadsheetId: e.target.value }));
                       triggerAutoSave('googleSheets');
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -409,11 +426,11 @@ export default function ConfigManagement() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   API Base URL
                 </label>
-                <input
+                  <input
                   type="url"
                   value={serverConfig?.apiBaseUrl || ''}
-                  onChange={(e) => {
-                    setServerConfig(prev => ({ ...prev, apiBaseUrl: e.target.value }));
+                    onChange={(e) => {
+                    setServerConfig(normalizeServer({ ...serverConfig, apiBaseUrl: e.target.value }));
                     triggerAutoSave('server');
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"

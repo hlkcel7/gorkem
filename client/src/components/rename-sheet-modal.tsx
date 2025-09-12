@@ -31,20 +31,9 @@ export default function RenameSheetModal({ isOpen, onClose, sheetId, currentName
   });
 
   const onSubmit = async (values: { name: string }) => {
-    if (!sheetId) return;
-    try {
-      // Google Sheets API'sinde sheet'i yeniden adlandır
-      await googleSheetsClient.renameSheet(SPREADSHEET_ID(), parseInt(sheetId), values.name.trim());
-      
-      // Cache'i invalidate et
-      queryClient.invalidateQueries({ queryKey: ['sheets'] });
-      
-      toast({ title: 'Yeniden adlandırıldı', description: 'Sheet adı güncellendi.' });
-      onSuccess();
-    } catch (err) {
-      console.error('Rename sheet error:', err);
-      toast({ title: 'Hata', description: 'Sheet adı güncellenemedi.', variant: 'destructive' });
-    }
+    // Client-side sheet rename deprecated. Inform the user and close.
+    toast({ title: 'İşlem devre dışı', description: 'Sheet yeniden adlandırma client tarafında devre dışı bırakıldı.', variant: 'destructive' });
+    onSuccess();
   };
 
   return (

@@ -30,8 +30,8 @@ interface FinancialDashboardProps {
 }
 
 export function FinancialDashboard({ 
-  selectedMonth = new Date().getMonth() + 1, 
-  selectedYear = new Date().getFullYear() 
+  selectedMonth = String(new Date().getMonth() + 1), 
+  selectedYear = String(new Date().getFullYear()) 
 }: FinancialDashboardProps) {
   const [kpiData, setKpiData] = useState<FinancialKPI | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,6 +42,20 @@ export function FinancialDashboard({
     try {
       setLoading(true);
       console.log('📊 Financial Dashboard: Mevcut tablolardan KPI hesaplama...');
+      // If client-side Google Sheets is not available/authenticated, show demo values
+      if (!googleSheetsClient || typeof googleSheetsClient.isAuthenticated !== 'function' || !googleSheetsClient.isAuthenticated()) {
+        console.warn('Client-side Google Sheets not available or not authenticated. Showing demo KPI values.');
+        setKpiData({
+          toplam_gelir: 0,
+          toplam_gider: 0,
+          net_kar: 0,
+          nakit_pozisyon: 0,
+          aktif_projeler: 0,
+          yaklasan_odemeler: 0
+        });
+        setLastUpdated(new Date());
+        return;
+      }
       
       let toplamGelir = 0;
       let toplamGider = 0;
@@ -49,7 +63,8 @@ export function FinancialDashboard({
       let yakasanOdemelerSayisi = 0;
 
       // Mevcut spreadsheet'teki tüm sheet'leri kontrol et
-      const spreadsheetInfo = await googleSheetsClient.getSpreadsheetInfo(
+      // Cast to any because client-side googleSheets stub has flexible structure
+      const spreadsheetInfo: any = await googleSheetsClient.getSpreadsheetInfo(
         window.__APP_CONFIG__.GOOGLE_SPREADSHEET_ID
       );
 
@@ -58,7 +73,7 @@ export function FinancialDashboard({
         throw new Error('No sheets found');
       }
 
-      console.log(`📋 ${spreadsheetInfo.sheets.length} tablo bulundu:`, spreadsheetInfo.sheets.map(s => s.title));
+  console.log(`📋 ${spreadsheetInfo.sheets.length} tablo bulundu:`, spreadsheetInfo.sheets.map((s: any) => s.title));
 
       // Her sheet'i kontrol et ve finansal verileri topla
       for (const sheet of spreadsheetInfo.sheets) {
@@ -135,7 +150,7 @@ export function FinancialDashboard({
         toplam_gider: toplamGider,
         net_kar: toplamGelir - toplamGider,
         nakit_pozisyon: nakitPozisyon,
-        aktif_projeler: Math.max(1, spreadsheetInfo.sheets.filter(s => 
+        aktif_projeler: Math.max(1, spreadsheetInfo.sheets.filter((s: any) => 
           /(proje|project|iş)/i.test(s.title.toLowerCase())
         ).length),
         yaklasan_odemeler: yakasanOdemelerSayisi

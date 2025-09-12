@@ -173,7 +173,7 @@ export class ClientGoogleSheetsService {
       return result;
     } catch (error) {
       console.error('Error getting spreadsheet info:', error);
-      throw new Error('Spreadsheet bilgileri alınamadı: ' + (error.message || 'Bilinmeyen hata'));
+  throw new Error('Spreadsheet bilgileri alınamadı: ' + ((error as any)?.message || 'Bilinmeyen hata'));
     }
   }
 

@@ -32,3 +32,13 @@ window.__APP_CONFIG__ = {
   CONFIG_LOADED: false,
   CONFIG_SOURCE: 'placeholder' // placeholder | firestore | user-settings
 };
+
+// Convenience runtime flag to hide specific sidebar items without removing pages.
+// Set to an array of keys to hide. Supported keys: 'projects-summary', 'dashboard', 'financial-dashboard'
+// Example to hide: window.__APP_CONFIG__.HIDE_SIDEBAR_ITEMS = ['dashboard'];
+// Default: hide the three requested sidebar items. Change this array to re-enable any item.
+window.__APP_CONFIG__.HIDE_SIDEBAR_ITEMS = window.__APP_CONFIG__.HIDE_SIDEBAR_ITEMS || [
+  'projects-summary',
+  'dashboard',
+  'financial-dashboard'
+];

@@ -64,6 +64,11 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
     setContextMenu({ ...contextMenu, visible: false });
   };
 
+  // Read runtime hide-list from `window.__APP_CONFIG__` (set in client/public/app-config.js)
+  // This allows hiding sidebar items without deleting pages.
+  const hideSidebarItems: string[] =
+    (typeof window !== "undefined" && (window as any).__APP_CONFIG__?.HIDE_SIDEBAR_ITEMS) || [];
+
   const sidebarContent = (
     <div className="flex h-full flex-col bg-card border-r border-border">
       {/* Header */}
@@ -79,44 +84,50 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
 
       {/* Navigation */}
       <nav className="flex-1 px-4 py-6 space-y-2">
-        <button
-          onClick={() => handleNavigation("/projects")}
-          className={`w-full group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-            location === "/projects" 
-              ? "bg-primary text-primary-foreground" 
-              : "text-foreground hover:bg-accent hover:text-accent-foreground"
-          }`}
-          data-testid="nav-projects"
-        >
-          <i className="fas fa-building mr-3 h-5 w-5"></i>
-          🏗️ Projeler Özet Tablosu
-        </button>
+        {!hideSidebarItems.includes("projects-summary") && (
+          <button
+            onClick={() => handleNavigation("/projects")}
+            className={`w-full group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+              location === "/projects" 
+                ? "bg-primary text-primary-foreground" 
+                : "text-foreground hover:bg-accent hover:text-accent-foreground"
+            }`}
+            data-testid="nav-projects"
+          >
+            <i className="fas fa-building mr-3 h-5 w-5"></i>
+            🏗️ Projeler Özet Tablosu
+          </button>
+        )}
 
-        <button
-          onClick={() => handleNavigation("/")}
-          className={`w-full group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-            location === "/" 
-              ? "bg-primary text-primary-foreground" 
-              : "text-foreground hover:bg-accent hover:text-accent-foreground"
-          }`}
-          data-testid="nav-dashboard"
-        >
-          <i className="fas fa-chart-line mr-3 h-5 w-5"></i>
-          📊 Dashboard
-        </button>
+        {!hideSidebarItems.includes("dashboard") && (
+          <button
+            onClick={() => handleNavigation("/")}
+            className={`w-full group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+              location === "/" 
+                ? "bg-primary text-primary-foreground" 
+                : "text-foreground hover:bg-accent hover:text-accent-foreground"
+            }`}
+            data-testid="nav-dashboard"
+          >
+            <i className="fas fa-chart-line mr-3 h-5 w-5"></i>
+            📊 Dashboard
+          </button>
+        )}
 
-        <button
-          onClick={() => handleNavigation("/financial")}
-          className={`w-full group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-            location === "/financial" 
-              ? "bg-primary text-primary-foreground" 
-              : "text-foreground hover:bg-accent hover:text-accent-foreground"
-          }`}
-          data-testid="nav-financial"
-        >
-          <i className="fas fa-chart-bar mr-3 h-5 w-5"></i>
-          Finansal Dashboard
-        </button>
+        {!hideSidebarItems.includes("financial-dashboard") && (
+          <button
+            onClick={() => handleNavigation("/financial")}
+            className={`w-full group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+              location === "/financial" 
+                ? "bg-primary text-primary-foreground" 
+                : "text-foreground hover:bg-accent hover:text-accent-foreground"
+            }`}
+            data-testid="nav-financial"
+          >
+            <i className="fas fa-chart-bar mr-3 h-5 w-5"></i>
+            Finansal Dashboard
+          </button>
+        )}
 
         <button
           onClick={() => handleNavigation("/document-search")}

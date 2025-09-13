@@ -158,19 +158,19 @@ export default function InfoCenterPage(): JSX.Element {
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <span style={{ marginRight: 8 }}>
                   <InputText
-                    placeholder="Enter keyword"
-                    value={globalFilter}
-                    onChange={(e) => {
-                      const v = (e.target as HTMLInputElement).value;
-                      setGlobalFilter(v);
-                      if (globalFilterOnly) {
-                        setFilters({ global: { value: v, matchMode: 'contains' } });
-                      } else {
-                        setFilters((f: any) => ({ ...f, global: { ...(f?.global || {}), value: v } }));
-                      }
-                    }}
-                    style={{ width: '12rem' }}
-                  />
+                      placeholder="Anahtar kelime ara..."
+                      value={globalFilter}
+                      onChange={(e) => {
+                        const v = (e.target as HTMLInputElement).value;
+                        setGlobalFilter(v);
+                        if (globalFilterOnly) {
+                          setFilters({ global: { value: v, matchMode: 'contains' } });
+                        } else {
+                          setFilters((f: any) => ({ ...f, global: { ...(f?.global || {}), value: v } }));
+                        }
+                      }}
+                      className="w-48 border-2 border-black rounded px-2 py-1"
+                    />
                 </span>
                 <button
                   type="button"
@@ -186,14 +186,14 @@ export default function InfoCenterPage(): JSX.Element {
                     }
                   }}
                 >
-                  Global Filter Only
+                  Aranacak kelimeyi giriniz..
                 </button>
               </div>
             </div>
           </CardHeader>
           <CardContent>
           {isLoading ? (
-            <div className="p-6">Veriler ekleniyor...</div>
+            <div className="p-6">Veriler Yükleniyor...</div>
           ) : error ? (
             <div className="p-6 text-red-600">Veri Çekilemedi: {String(error)}</div>
           ) : (

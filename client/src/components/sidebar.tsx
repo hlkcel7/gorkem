@@ -141,6 +141,19 @@ export default function Sidebar({ isOpen, onClose, isMobile }: SidebarProps) {
           <i className="fas fa-search mr-3 h-5 w-5"></i>
           🔍 Belge Arama
         </button>
+
+        <button
+          onClick={() => handleNavigation("/ai-search")}
+          className={`w-full group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+            location === "/ai-search" 
+              ? "bg-primary text-primary-foreground" 
+              : "text-foreground hover:bg-accent hover:text-accent-foreground"
+          }`}
+          data-testid="nav-ai-search"
+        >
+          <i className="fas fa-robot mr-3 h-5 w-5"></i>
+          🤖 Yapay Zeka İle Ara
+        </button>
         
         {/* Info Center link (replaces Google Sheets list) */}
         <div className="mt-6">

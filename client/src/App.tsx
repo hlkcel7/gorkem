@@ -8,6 +8,7 @@ import SheetView from "./pages/sheet-view";
 import { FinancialPage } from "./pages/financial";
 import ProjectsPage from "./pages/projects";
 import DocumentSearchPage from "./pages/document-search";
+import AISearchPage from "./pages/ai-search";
 import InfoCenterPage from "./pages/info-center";
 import Login from "./pages/login";
 import Sidebar from "./components/sidebar";
@@ -28,6 +29,7 @@ function Router() {
       <Route path="/projects/info-center" component={InfoCenterPage} />
       <Route path="/financial" component={FinancialPage} />
       <Route path="/document-search" component={DocumentSearchPage} />
+      <Route path="/ai-search" component={AISearchPage} />
       <Route path="/sheets/:id" component={SheetView} />
       <Route component={Dashboard} />
     </Switch>

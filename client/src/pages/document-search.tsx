@@ -87,7 +87,12 @@ export default function DocumentSearchPage() {
   const [activeTab, setActiveTab] = useState('search');
   const [showFilters, setShowFilters] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [enableAI, setEnableAI] = useState(true); // AI destekli arama default açık
+  
+  // Initialize enableAI from localStorage, default to true if not set
+  const [enableAI, setEnableAI] = useState(() => {
+    const stored = localStorage.getItem('doc_search_enable_ai');
+    return stored !== null ? stored === 'true' : true;
+  });
   
   // Kullanıcı ayarları hook'u
   const { user } = useAuth();
@@ -122,28 +127,16 @@ export default function DocumentSearchPage() {
   const prevConfigsRef = useRef(configs);
   // Auto-save-on-login guard to ensure we run save only once per session/login
   const autoSaveOnLoginRef = useRef(false);
-  // Ensure enableAI from settings is applied only once (initial load)
-  const initialEnableAIAppliedRef = useRef(false);
+  // No longer need initialEnableAIAppliedRef since we use localStorage now
 
   // Sayfa yüklendiğinde güvenlik kontrolü
   useEffect(() => {
     performSecurityCheck();
   }, []);
 
-  // Ayarlar değiştiğinde bunları uygulama (sadece gerçek değişikliklerde)
-  // Keep enableAI state in sync with user settings, but allow a session-level override
-  // so user's local toggle isn't immediately overwritten by remote updates.
+  // Handle settings changes (removed enableAI sync since it's local-only now)
   useEffect(() => {
     if (settings && !settingsLoading) {
-      // If the user has set a session override, respect it (persisted until logout/tab close)
-      const sessionOverride = sessionStorage.getItem('doc_search_enable_ai_override');
-      if (sessionOverride !== null) {
-        setEnableAI(sessionOverride === 'true');
-      } else if (!initialEnableAIAppliedRef.current) {
-        // Apply the settings.enableAI only once at initial load when there's no session override
-        setEnableAI(settings.enableAI ?? true);
-        initialEnableAIAppliedRef.current = true;
-      } // otherwise: do not update enableAI from remote settings anymore
       
       // Yeni configs'i oluştur
       const newConfigs = {
@@ -228,16 +221,11 @@ export default function DocumentSearchPage() {
     }
   }, [settings, settingsLoading]);
 
-  // Persist enableAI when user toggles it. Use a small debounce to avoid rapid writes.
-  // Keep enableAI as a session-local preference only (isolated from system saves)
-  // When the user toggles the checkbox we only update sessionStorage so it remains
-  // independent from Firestore-driven system config. Persisting to Firestore is
-  // done only when the user presses the explicit "Kaydet ve Senkronize Et" button.
-  useEffect(() => {
-    if (settingsLoading) return;
-    // keep a session override so remote updates won't stomp the user's choice during this session
-    sessionStorage.setItem('doc_search_enable_ai_override', enableAI ? 'true' : 'false');
-  }, [enableAI, settingsLoading]);
+  // Handle AI toggle (purely local now, no syncing with remote settings)
+  const handleAIToggle = (checked: boolean) => {
+    setEnableAI(checked);
+    localStorage.setItem('doc_search_enable_ai', checked.toString());
+  };
 
   // Auto-load configs from window.__APP_CONFIG__ (only once)
   useEffect(() => {
@@ -296,8 +284,7 @@ export default function DocumentSearchPage() {
         supabase: configs.supabase,
         deepseek: configs.deepseek,
         openai: configs.openai,
-        // Only include enableAI if caller wants to persist it
-        enableAI: persistEnable ? enableAI : (settings?.enableAI ?? true),
+        // Remove enableAI from settings since it's local-only now
         vectorThreshold: 0.3,
         vectorWeight: 0.3,
         textWeight: 0.7,
@@ -503,7 +490,7 @@ export default function DocumentSearchPage() {
               <Checkbox
                 id="enable-ai"
                 checked={enableAI}
-                onCheckedChange={(checked) => setEnableAI(Boolean(checked))}
+                onCheckedChange={handleAIToggle}
               />
               <Label 
                 htmlFor="enable-ai" 

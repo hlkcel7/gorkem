@@ -125,6 +125,27 @@ export function useDocumentSearch() {
     }
   };
 
+  // Clear stats when database disconnects
+  useEffect(() => {
+    if (connectionState.supabase !== 'connected') {
+      setSearchState(prev => ({
+        ...prev,
+        stats: {
+          totalDocuments: 0,
+          correspondenceTypeCounts: {},
+          severityRateCounts: {},
+          recentDocuments: 0,
+          incomingOutgoing: {}
+        }
+      }));
+      setAvailableOptions({
+        correspondenceTypes: [],
+        severityRates: [],
+        keywords: []
+      });
+    }
+  }, [connectionState.supabase]);
+
   // Bağlantı durumlarını test etme
   const testConnections = async () => {
     // Prevent overlapping or too-frequent full connection tests

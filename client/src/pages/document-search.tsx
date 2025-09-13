@@ -70,6 +70,7 @@ export default function DocumentSearchPage() {
     // Actions
     configureServices,
     testConnections,
+    loadInitialData,
     search,
     vectorSearch,
     advancedSearch,
@@ -226,6 +227,13 @@ export default function DocumentSearchPage() {
     setEnableAI(checked);
     localStorage.setItem('doc_search_enable_ai', checked.toString());
   };
+
+  // Refresh stats and options when Supabase connects
+  useEffect(() => {
+    if (connectionState.supabase === 'connected') {
+      loadInitialData();
+    }
+  }, [connectionState.supabase]);
 
   // Auto-load configs from window.__APP_CONFIG__ (only once)
   useEffect(() => {

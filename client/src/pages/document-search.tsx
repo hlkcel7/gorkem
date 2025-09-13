@@ -120,6 +120,10 @@ export default function DocumentSearchPage() {
 
   // Önceki config'leri takip etmek için ref
   const prevConfigsRef = useRef(configs);
+  // Auto-save-on-login guard to ensure we run save only once per session/login
+  const autoSaveOnLoginRef = useRef(false);
+  // Ensure enableAI from settings is applied only once (initial load)
+  const initialEnableAIAppliedRef = useRef(false);
 
   // Sayfa yüklendiğinde güvenlik kontrolü
   useEffect(() => {
@@ -127,10 +131,19 @@ export default function DocumentSearchPage() {
   }, []);
 
   // Ayarlar değiştiğinde bunları uygulama (sadece gerçek değişikliklerde)
+  // Keep enableAI state in sync with user settings, but allow a session-level override
+  // so user's local toggle isn't immediately overwritten by remote updates.
   useEffect(() => {
     if (settings && !settingsLoading) {
-      // Ayarları uygula
-      setEnableAI(settings.enableAI ?? true);
+      // If the user has set a session override, respect it (persisted until logout/tab close)
+      const sessionOverride = sessionStorage.getItem('doc_search_enable_ai_override');
+      if (sessionOverride !== null) {
+        setEnableAI(sessionOverride === 'true');
+      } else if (!initialEnableAIAppliedRef.current) {
+        // Apply the settings.enableAI only once at initial load when there's no session override
+        setEnableAI(settings.enableAI ?? true);
+        initialEnableAIAppliedRef.current = true;
+      } // otherwise: do not update enableAI from remote settings anymore
       
       // Yeni configs'i oluştur
       const newConfigs = {
@@ -170,9 +183,61 @@ export default function DocumentSearchPage() {
         }
       } else {
         console.log('ℹ️ Config değişikliği yok, servis konfigürasyonu atlandı');
+        // If configs didn't change but services are not connected yet (first login),
+        // force a one-time configure + test so the UI applies the Firestore-provided settings.
+        // This avoids the kısır döngü where the checkbox toggle or other UI tries to save
+        // before an initial connection is established.
+        if (!isAnyDatabaseConnected) {
+          console.log('⚙️ Servisler bağlı değil; bir kerelik otomatik konfigürasyon ve test çalıştırılıyor');
+          // avoid blocking the effect
+          (async () => {
+            try {
+              // ensure local configs state matches settings
+              setConfigs(newConfigs);
+              prevConfigsRef.current = newConfigs;
+              // call configureServices (wrapped in hook to init once)
+              try {
+                configureServices(newConfigs);
+              } catch (err) {
+                console.warn('Otomatik konfigürasyon hatası (ignore):', err);
+              }
+              // run connection tests (hook has cooldown/guards)
+              try {
+                await testConnections();
+              } catch (err) {
+                console.warn('Otomatik bağlantı testi hatası (ignore):', err);
+              }
+              // After initial configure + test, trigger the same action as the
+              // "Kaydet ve Senkronize Et" button once (save settings & sync)
+              try {
+                if (!autoSaveOnLoginRef.current) {
+                  autoSaveOnLoginRef.current = true;
+                  console.log('🔔 Otomatik olarak "Kaydet ve Senkronize Et" tetikleniyor');
+                  // call default: persistEnableAI = true (button behavior)
+                  await handleConfigSave();
+                }
+              } catch (saveErr) {
+                console.warn('Otomatik kaydet/senkronize başarısız (ignore):', saveErr);
+              }
+            } catch (e) {
+              console.error('Otomatik konfigürasyon sırasında hata:', e);
+            }
+          })();
+        }
       }
     }
   }, [settings, settingsLoading]);
+
+  // Persist enableAI when user toggles it. Use a small debounce to avoid rapid writes.
+  // Keep enableAI as a session-local preference only (isolated from system saves)
+  // When the user toggles the checkbox we only update sessionStorage so it remains
+  // independent from Firestore-driven system config. Persisting to Firestore is
+  // done only when the user presses the explicit "Kaydet ve Senkronize Et" button.
+  useEffect(() => {
+    if (settingsLoading) return;
+    // keep a session override so remote updates won't stomp the user's choice during this session
+    sessionStorage.setItem('doc_search_enable_ai_override', enableAI ? 'true' : 'false');
+  }, [enableAI, settingsLoading]);
 
   // Auto-load configs from window.__APP_CONFIG__ (only once)
   useEffect(() => {
@@ -221,14 +286,18 @@ export default function DocumentSearchPage() {
   }, []); // Empty dependency array - run only once
 
   // Handle config save
-  const handleConfigSave = async () => {
+  // handleConfigSave optionally accepts opts.persistEnableAI (default true).
+  // If persistEnableAI is false, the current enableAI value will not be written to Firestore.
+  const handleConfigSave = async (opts?: { persistEnableAI?: boolean }) => {
     try {
       // Yeni ayarları oluştur
+      const persistEnable = opts?.persistEnableAI !== false;
       const newSettings: UserSettings = {
         supabase: configs.supabase,
         deepseek: configs.deepseek,
         openai: configs.openai,
-        enableAI,
+        // Only include enableAI if caller wants to persist it
+        enableAI: persistEnable ? enableAI : (settings?.enableAI ?? true),
         vectorThreshold: 0.3,
         vectorWeight: 0.3,
         textWeight: 0.7,

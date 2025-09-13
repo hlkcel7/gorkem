@@ -259,34 +259,56 @@ Supabase sonuç örnekleri: ${JSON.stringify(supabaseResults.slice(0, 3))}`;
       throw new Error('DeepSeek konfigürasyonu yapılmamış');
     }
 
-    const response = await fetch(`${this.config.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.config.apiKey}`
-      },
-      body: JSON.stringify({
-        model: this.config.model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.3,
-        max_tokens: 2000
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`DeepSeek API hatası: ${response.status} ${response.statusText}`);
+    // Don't try network calls when the client is offline
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      throw new Error('DeepSeek API call aborted: offline');
     }
 
-    const data: DeepSeekResponse = await response.json();
-    
-    if (!data.choices || data.choices.length === 0) {
-      throw new Error('DeepSeek API\'den yanıt alınamadı');
-    }
+    const url = `${this.config.baseUrl}/chat/completions`;
+    // simple retry/backoff to avoid flooding when network is flaky
+    const maxAttempts = 2;
+    let attempt = 0;
+    const baseDelay = 250;
 
-    return data.choices[0].message.content;
+    while (true) {
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.config.apiKey}`
+          },
+          body: JSON.stringify({
+            model: this.config.model,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt }
+            ],
+            temperature: 0.3,
+            max_tokens: 2000
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`DeepSeek API hatası: ${response.status} ${response.statusText}`);
+        }
+
+        const data: DeepSeekResponse = await response.json();
+        if (!data.choices || data.choices.length === 0) {
+          throw new Error("DeepSeek API'den yanıt alınamadı");
+        }
+
+        return data.choices[0].message.content;
+      } catch (err) {
+        attempt += 1;
+        if (attempt > maxAttempts) {
+          throw err;
+        }
+        // wait small backoff
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((r) => setTimeout(r, baseDelay * attempt));
+      }
+    }
   }
 
   // Fallback karar mekanizması
@@ -336,16 +358,18 @@ Supabase sonuç örnekleri: ${JSON.stringify(supabaseResults.slice(0, 3))}`;
       if (!this.config) {
         return false;
       }
+      // avoid repeating expensive network tests too frequently
+      const ok = await this.makeApiCall('Sen bir test asistanısın.', 'Merhaba, çalışıyor musun?')
+        .then((r) => !!r)
+        .catch((err) => {
+          console.warn('DeepSeek testConnection failed:', err);
+          return false;
+        });
 
-      const response = await this.makeApiCall(
-        'Sen bir test asistanısın.',
-        'Merhaba, çalışıyor musun?'
-      );
-
-      return response.length > 0;
+      return ok;
 
     } catch (error) {
-      console.error('DeepSeek bağlantı testi başarısız:', error);
+      console.error('DeepSeek bağlantı testi hata (üst seviye):', error);
       return false;
     }
   }

@@ -4,6 +4,12 @@ import { supabaseService, DocumentRecord, VectorSearchResult } from '../services
 import { deepSeekService, SearchDecision } from '../services/deepseek';
 import { openAIService, QueryEnhancement } from '../services/openai-embeddings';
 
+// Module-level guards to avoid repeated initialization across hook instances
+let servicesInitialized = false;
+let connectionTestInProgress = false;
+let lastConnectionTestAt = 0;
+const CONNECTION_TEST_COOLDOWN_MS = 15_000; // 15s cooldown between full test runs
+
 interface SearchFilters {
   dateFrom?: string;             // letter_date için
   dateTo?: string;               // letter_date için
@@ -94,20 +100,51 @@ export function useDocumentSearch() {
     }
   };
 
+  // Track whether we've run initial connection checks after configureServices
+  let initialConfigured = false;
+
+  // Expose configureServices but also trigger initial tests/data load once
+  const configureServicesAndInit = (configs: {
+    supabase?: { url: string; anonKey: string };
+    deepseek?: { apiKey: string };
+    openai?: { apiKey: string };
+  }) => {
+    configureServices(configs);
+    // Run initial tests and data load only once after services are configured (module-level guard)
+    if (!servicesInitialized) {
+      servicesInitialized = true;
+      // fire-and-forget but avoid overlapping test runs
+      (async () => {
+        try {
+          await testConnections();
+          await loadInitialData();
+        } catch (e) {
+          console.error('İlk bağlantı/test veya veri yükleme hatası:', e);
+        }
+      })();
+    }
+  };
+
   // Bağlantı durumlarını test etme
   const testConnections = async () => {
-    setConnectionState(prev => ({
-      supabase: 'testing',
-      deepseek: 'testing',
-      openai: 'testing'
-    }));
+    // Prevent overlapping or too-frequent full connection tests
+    const now = Date.now();
+    if (connectionTestInProgress) return;
+    if (now - lastConnectionTestAt < CONNECTION_TEST_COOLDOWN_MS) return;
+
+    connectionTestInProgress = true;
+    lastConnectionTestAt = now;
+
+    setConnectionState({ supabase: 'testing', deepseek: 'testing', openai: 'testing' });
 
     try {
-      const [supabaseOk, deepseekOk, openaiOk] = await Promise.allSettled([
+      const results = await Promise.allSettled([
         supabaseService.testConnection(),
         deepSeekService.testConnection(),
         openAIService.testConnection()
       ]);
+
+      const [supabaseOk, deepseekOk, openaiOk] = results;
 
       setConnectionState({
         supabase: supabaseOk.status === 'fulfilled' && supabaseOk.value ? 'connected' : 'error',
@@ -117,11 +154,9 @@ export function useDocumentSearch() {
 
     } catch (error) {
       console.error('Bağlantı testi hatası:', error);
-      setConnectionState({
-        supabase: 'error',
-        deepseek: 'error',
-        openai: 'error'
-      });
+      setConnectionState({ supabase: 'error', deepseek: 'error', openai: 'error' });
+    } finally {
+      connectionTestInProgress = false;
     }
   };
 
@@ -369,7 +404,11 @@ export function useDocumentSearch() {
 
   // İlk yükleme
   useEffect(() => {
-    loadInitialData();
+    // Only load initial data once per page load to avoid repeated heavy reads
+    if (!servicesInitialized) {
+      servicesInitialized = true;
+      loadInitialData();
+    }
   }, []);
 
   return {
@@ -379,7 +418,7 @@ export function useDocumentSearch() {
     availableOptions,
 
     // Actions
-    configureServices,
+  configureServices: configureServicesAndInit,
     testConnections,
     search,
     vectorSearch,

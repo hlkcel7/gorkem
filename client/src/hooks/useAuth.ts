@@ -36,7 +36,28 @@ export function useAuth() {
       }
       // Google Sheets client removed from client bundle; any server-side session
       // should be cleared there if needed.
-      console.log('Signed out from Firebase. Google Sheets client deprecated on client.');
+      // Clear client-only session overrides so they don't persist beyond logout
+      try {
+        sessionStorage.removeItem('doc_search_enable_ai_override');
+        // any other session-only keys used for live config
+        sessionStorage.removeItem('doc_search_session_configs');
+      } catch (e) {
+        // ignore storage errors
+      }
+      try {
+        // clear diagnostic tokens if we know the user id
+        const currentUserId = auth?.currentUser?.uid;
+        if (currentUserId) {
+          // lazy-import to avoid circular import issues
+          const mod = await import('../services/firebaseConfig');
+          if (mod && typeof mod.clearLocalWriteToken === 'function') {
+            mod.clearLocalWriteToken(currentUserId);
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+      console.log('Signed out from Firebase. Cleared session overrides and local tokens.');
     } catch (err: any) {
       console.error('Sign out error:', err);
       setError(err.message);

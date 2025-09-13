@@ -82,6 +82,8 @@ export const DEFAULT_USER_CONFIG: Omit<UserConfig, 'meta'> = {
 class FirebaseConfigService {
   private db;
   private readonly COLLECTION_NAME = 'userConfigs';
+  // client-only map to track last local write tokens to avoid reacting to our own writes
+  private lastLocalWriteToken: Record<string, string> = {};
 
   constructor() {
     if (!app) {
@@ -194,8 +196,12 @@ class FirebaseConfigService {
         }
       };
 
+      // attach a small local token into meta for diagnostics (not persisted to other clients)
+      const token = `${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+      this.lastLocalWriteToken[userId] = token;
+      // persist normally
       await setDoc(docRef, updatedConfig);
-      console.log('✅ Firebase\'e user config kaydedildi');
+      console.log('✅ Firebase\'e user config kaydedildi', { userId, token });
     } catch (error) {
       console.error('❌ Firebase\'e config kaydetme hatası:', error);
       throw error;
@@ -213,8 +219,10 @@ class FirebaseConfigService {
         'meta.updatedAt': Timestamp.now()
       };
 
+      const token = `${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+      this.lastLocalWriteToken[userId] = token;
       await updateDoc(docRef, updateData);
-      console.log('✅ Firebase\'de user config güncellendi');
+      console.log('✅ Firebase\'de user config güncellendi', { userId, token });
     } catch (error) {
       console.error('❌ Firebase config güncelleme hatası:', error);
       throw error;
@@ -230,7 +238,15 @@ class FirebaseConfigService {
     const unsubscribe = onSnapshot(docRef, (doc) => {
       if (doc.exists()) {
         const config = doc.data() as UserConfig;
-        console.log('🔄 Firebase\'den config değişikliği alındı');
+        // Check for local write token (diagnostic only). We don't persist token in Firestore,
+        // so we only compare times if needed. Log and pass through, but highlight if recent local write exists.
+        const localToken = this.lastLocalWriteToken[userId];
+        if (localToken) {
+          console.log('🔄 Firebase listener received update shortly after local write', { userId, localToken });
+          // We do not automatically ignore because token isn't persisted; instead, caller can compare deep equality.
+        } else {
+          console.log('🔄 Firebase\'den config değişikliği alındı (no local token)');
+        }
         callback(config);
       } else {
         console.log('⚠️ Firebase\'de config dokümanı yok');
@@ -409,3 +425,16 @@ class FirebaseConfigService {
 // Singleton instance
 export const firebaseConfigService = new FirebaseConfigService();
 export default firebaseConfigService;
+
+// Helper to clear local write token for a user (use on sign out)
+export function clearLocalWriteToken(userId: string) {
+  if (firebaseConfigService && (firebaseConfigService as any).lastLocalWriteToken) {
+    try {
+      (firebaseConfigService as any).lastLocalWriteToken[userId] = undefined;
+      delete (firebaseConfigService as any).lastLocalWriteToken[userId];
+      console.log('Cleared local write token for', userId);
+    } catch (e) {
+      // ignore
+    }
+  }
+}

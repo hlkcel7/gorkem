@@ -48,9 +48,20 @@ class OpenAIEmbeddingsService {
       }
 
       // Basit test embedding
-      const testText = "Test connection";
-      await this.generateEmbedding(testText);
-      return true;
+      const testText = 'Test connection';
+      // If offline, bail quickly
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        console.warn('OpenAI testConnection skipped: offline');
+        return false;
+      }
+
+      try {
+        await this.generateEmbedding(testText);
+        return true;
+      } catch (err) {
+        console.warn('OpenAI testConnection generateEmbedding failed:', err);
+        return false;
+      }
     } catch (error) {
       console.error('OpenAI bağlantı hatası:', error);
       return false;
@@ -81,12 +92,12 @@ class OpenAIEmbeddingsService {
       });
 
       if (!response.ok) {
-        const errorData = await response.text();
+        const errorData = await response.text().catch(() => 'no body');
+        console.warn('OpenAI API returned non-ok:', response.status, errorData);
         throw new Error(`OpenAI API hatası: ${response.status} - ${errorData}`);
       }
 
       const data: EmbeddingResponse = await response.json();
-      
       if (!data.data || data.data.length === 0) {
         throw new Error('Embedding oluşturulamadı');
       }

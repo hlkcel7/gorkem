@@ -131,6 +131,14 @@ class SupabaseService {
     console.log('Supabase service: Kullanıcı kimliği ayarlandı', userId);
   }
 
+  // Client erişimi için getter
+  getClient(): SupabaseClient {
+    if (!this.client) {
+      throw new Error('Supabase bağlantısı başlatılmamış. Önce configureServices() çağrılmalı.');
+    }
+    return this.client;
+  }
+
   // Kullanıcı ayarlarını kaydet
   async saveUserSettings(settings: UserSettings): Promise<UserSettings | null> {
     try {
